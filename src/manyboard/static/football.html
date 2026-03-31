@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Many Board — Football</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ─────────────────────────────────────────── */
+    header {
+      background: #16213e;
+      border-bottom: 1px solid #0f3460;
+      padding: 0 20px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    .brand { font-size: 18px; font-weight: 700; color: #e94560; text-decoration: none; }
+
+    .header-score {
+      font-size: 13px;
+      color: #888;
+      font-family: monospace;
+      margin-left: 8px;
+    }
+
+    .view-tabs { display: flex; margin-left: auto; }
+
+    .tab-btn {
+      padding: 12px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #888;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+      cursor: pointer;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      transition: color 0.15s;
+    }
+    .tab-btn:hover { color: #e0e0e0; }
+    .tab-btn.active { color: #e94560; border-bottom-color: #e94560; }
+
+    /* ── Shared view container ───────────────────────────── */
+    .view { display: none; flex: 1; overflow: hidden; }
+    .view.active { display: flex; }
+
+    /* ════════════════════════════════════════════════════════
+       DISPLAY VIEW — TV Scoreboard
+    ════════════════════════════════════════════════════════ */
+    #view-display {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #1a1a2e;
+      padding: 32px;
+      gap: 20px;
+    }
+
+    .d-game-status {
+      font-size: 13px;
+      font-weight: 700;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .d-down-distance {
+      font-size: 22px;
+      font-weight: 700;
+      color: #4fc3f7;
+      letter-spacing: 1px;
+    }
+
+    .d-teams-row {
+      display: flex;
+      align-items: center;
+      gap: 48px;
+      width: 100%;
+      max-width: 900px;
+      justify-content: center;
+    }
+
+    .d-team {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      max-width: 300px;
+    }
+
+    .d-team-name {
+      font-size: 32px;
+      font-weight: 700;
+      color: #e0e0e0;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-align: center;
+    }
+    .d-team-name.has-ball { color: #e94560; }
+
+    .d-team-score {
+      font-size: 100px;
+      font-weight: 700;
+      color: #fff;
+      font-family: monospace;
+      line-height: 1;
+    }
+
+    .d-timeouts {
+      display: flex;
+      gap: 8px;
+    }
+
+    .d-timeout-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #e94560;
+    }
+    .d-timeout-dot.used { background: #333; }
+
+    .d-divider {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .d-possession-arrow {
+      font-size: 28px;
+      color: #e94560;
+      font-weight: 700;
+    }
+
+    .d-possession-label {
+      font-size: 11px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .d-clock-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .d-clock-value {
+      font-size: 64px;
+      font-weight: 700;
+      color: #fff;
+      font-family: monospace;
+      line-height: 1;
+    }
+    .d-clock-value.running { color: #2ecc71; animation: pulse 1s ease-in-out infinite; }
+
+    .d-clock-label {
+      font-size: 11px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .d-nrz-badge {
+      background: #e94560;
+      color: #fff;
+      padding: 6px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    @keyframes spin   { to { transform: rotate(360deg); } }
+
+    /* ════════════════════════════════════════════════════════
+       CONTROL VIEW
+    ════════════════════════════════════════════════════════ */
+    #view-control {
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 16px 20px 32px;
+      gap: 0;
+    }
+
+    .ctrl-section {
+      margin-bottom: 20px;
+    }
+
+    .ctrl-header {
+      font-size: 11px;
+      font-weight: 700;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #333;
+      margin-bottom: 10px;
+    }
+
+    .ctrl-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .ctrl-team-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #4fc3f7;
+      min-width: 90px;
+    }
+
+    .ctrl-score-display {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      font-family: monospace;
+      min-width: 36px;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid #333;
+      background: transparent;
+      color: #888;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn:hover { border-color: #e94560; color: #e94560; }
+    .btn:active { opacity: 0.7; }
+
+    .btn-primary {
+      background: #e94560;
+      color: white;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-primary:hover { background: #c0392b; }
+
+    .btn-score {
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 6px;
+      border: 1px solid #333;
+      background: transparent;
+      color: #e0e0e0;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-score:hover { border-color: #2ecc71; color: #2ecc71; }
+    .btn-score.negative:hover { border-color: #e94560; color: #e94560; }
+
+    .btn-state {
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid #333;
+      background: transparent;
+      color: #888;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-state:hover { border-color: #555; color: #e0e0e0; }
+    .btn-state.active { background: #e94560; color: #fff; border-color: #e94560; }
+
+    .btn-nrz {
+      padding: 8px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid #333;
+      background: transparent;
+      color: #888;
+      letter-spacing: 1px;
+      transition: all 0.15s;
+    }
+    .btn-nrz.active { background: #e94560; color: #fff; border-color: #e94560; }
+
+    .ctrl-clock-display {
+      font-size: 48px;
+      font-weight: 700;
+      color: #fff;
+      font-family: monospace;
+      line-height: 1;
+      margin-bottom: 10px;
+    }
+    .ctrl-clock-display.running { color: #2ecc71; }
+
+    .ctrl-timeout-dots { display: flex; gap: 6px; align-items: center; }
+
+    .ctrl-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #e94560;
+    }
+    .ctrl-dot.used { background: #333; }
+
+    /* ════════════════════════════════════════════════════════
+       CLOCK VIEW — Fullscreen play clock
+    ════════════════════════════════════════════════════════ */
+    #view-clock {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #111;
+      gap: 24px;
+    }
+
+    .clock-big {
+      font-size: 200px;
+      font-weight: 700;
+      color: #fff;
+      font-family: monospace;
+      line-height: 1;
+    }
+    .clock-big.running { color: #2ecc71; }
+    .clock-big.expired { color: #e94560; }
+
+    .clock-teams {
+      font-size: 18px;
+      color: #888;
+      font-family: monospace;
+      letter-spacing: 2px;
+    }
+
+    .clock-half-label {
+      font-size: 16px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="/" class="brand">MANY BOARD</a>
+    <span class="header-score" id="header-score"></span>
+    <nav class="view-tabs">
+      <button class="tab-btn" id="tab-display" onclick="switchView('display')">Display</button>
+      <button class="tab-btn" id="tab-control" onclick="switchView('control')">Control</button>
+      <button class="tab-btn" id="tab-clock"   onclick="switchView('clock')">Clock</button>
+    </nav>
+  </header>
+
+  <!-- ── DISPLAY VIEW ───────────────────────────────────── -->
+  <div class="view" id="view-display">
+    <div class="d-game-status" id="d-half"></div>
+    <div class="d-down-distance" id="d-down-dist"></div>
+
+    <div class="d-teams-row">
+      <div class="d-team">
+        <div class="d-team-name" id="d-home-name"></div>
+        <div class="d-team-score" id="d-home-score"></div>
+        <div class="d-timeouts" id="d-home-timeouts"></div>
+      </div>
+
+      <div class="d-divider">
+        <div class="d-possession-arrow" id="d-poss-arrow"></div>
+        <div class="d-possession-label">possession</div>
+      </div>
+
+      <div class="d-team">
+        <div class="d-team-name" id="d-away-name"></div>
+        <div class="d-team-score" id="d-away-score"></div>
+        <div class="d-timeouts" id="d-away-timeouts"></div>
+      </div>
+    </div>
+
+    <div class="d-clock-wrap">
+      <div class="d-clock-value" id="d-clock"></div>
+      <div class="d-clock-label">play clock</div>
+    </div>
+
+    <div class="d-nrz-badge" id="d-nrz" style="display:none">NO RUN ZONE</div>
+  </div>
+
+  <!-- ── CONTROL VIEW ──────────────────────────────────── -->
+  <div class="view" id="view-control">
+
+    <!-- Scoring -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">Scoring</div>
+
+      <div class="ctrl-row">
+        <span class="ctrl-team-label" id="c-home-label"></span>
+        <span class="ctrl-score-display" id="c-home-score"></span>
+        <button class="btn-score" onclick="addScore('home',6)">TD +6</button>
+        <button class="btn-score" onclick="addScore('home',1)">PAT +1</button>
+        <button class="btn-score" onclick="addScore('home',2)">2PT +2</button>
+        <button class="btn-score" onclick="addScore('home',3)">FG +3</button>
+        <button class="btn-score" onclick="addScore('home',2)">SAF +2</button>
+        <button class="btn-score negative" onclick="addScore('home',-1)">-1</button>
+      </div>
+
+      <div class="ctrl-row">
+        <span class="ctrl-team-label" id="c-away-label"></span>
+        <span class="ctrl-score-display" id="c-away-score"></span>
+        <button class="btn-score" onclick="addScore('away',6)">TD +6</button>
+        <button class="btn-score" onclick="addScore('away',1)">PAT +1</button>
+        <button class="btn-score" onclick="addScore('away',2)">2PT +2</button>
+        <button class="btn-score" onclick="addScore('away',3)">FG +3</button>
+        <button class="btn-score" onclick="addScore('away',2)">SAF +2</button>
+        <button class="btn-score negative" onclick="addScore('away',-1)">-1</button>
+      </div>
+    </div>
+
+    <!-- Down & Distance -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">Down &amp; Distance</div>
+      <div class="ctrl-row">
+        <button class="btn-state" id="down-1" onclick="setDown(1)">1st</button>
+        <button class="btn-state" id="down-2" onclick="setDown(2)">2nd</button>
+        <button class="btn-state" id="down-3" onclick="setDown(3)">3rd</button>
+        <button class="btn-state" id="down-4" onclick="setDown(4)">4th</button>
+        &nbsp;
+        <button class="btn-state" id="dist-midfield" onclick="setDistance('midfield')">Midfield</button>
+        <button class="btn-state" id="dist-goal"     onclick="setDistance('goal')">Goal</button>
+      </div>
+    </div>
+
+    <!-- Possession -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">Possession</div>
+      <div class="ctrl-row">
+        <button class="btn-state" id="poss-home" onclick="setPossession('home')"></button>
+        <button class="btn-state" id="poss-away" onclick="setPossession('away')"></button>
+      </div>
+    </div>
+
+    <!-- Timeouts -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">Timeouts</div>
+      <div class="ctrl-row">
+        <span class="ctrl-team-label" id="c-home-to-label"></span>
+        <div class="ctrl-timeout-dots" id="c-home-to-dots"></div>
+        <button class="btn" onclick="useTimeout('home')">Use TO</button>
+        <button class="btn" onclick="restoreTimeout('home')" style="font-size:11px">Restore</button>
+      </div>
+      <div class="ctrl-row">
+        <span class="ctrl-team-label" id="c-away-to-label"></span>
+        <div class="ctrl-timeout-dots" id="c-away-to-dots"></div>
+        <button class="btn" onclick="useTimeout('away')">Use TO</button>
+        <button class="btn" onclick="restoreTimeout('away')" style="font-size:11px">Restore</button>
+      </div>
+    </div>
+
+    <!-- Half -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">Half</div>
+      <div class="ctrl-row">
+        <button class="btn-state" id="half-first"    onclick="setHalf('first')">1st Half</button>
+        <button class="btn-state" id="half-halftime" onclick="setHalf('halftime')">Halftime</button>
+        <button class="btn-state" id="half-second"   onclick="setHalf('second')">2nd Half</button>
+        <button class="btn-state" id="half-final"    onclick="setHalf('final')">Final</button>
+      </div>
+    </div>
+
+    <!-- Play Clock -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">Play Clock</div>
+      <div class="ctrl-clock-display" id="c-clock-display"></div>
+      <div class="ctrl-row">
+        <button class="btn-primary" id="clock-toggle-btn" onclick="toggleClock()">Start</button>
+        <button class="btn" onclick="resetClock()">Reset</button>
+      </div>
+    </div>
+
+    <!-- No Run Zone -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">Situational</div>
+      <div class="ctrl-row">
+        <button class="btn-nrz" id="nrz-btn" onclick="toggleNRZ()">No Run Zone</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── CLOCK VIEW ────────────────────────────────────── -->
+  <div class="view" id="view-clock">
+    <div class="clock-teams" id="ck-teams"></div>
+    <div class="clock-big" id="ck-clock"></div>
+    <div class="clock-half-label" id="ck-half"></div>
+  </div>
+
+  <script>
+    // ── State ────────────────────────────────────────────
+    const params   = new URLSearchParams(window.location.search);
+    const gameId   = params.get('game');
+    let   view     = params.get('view') || 'display';
+    let   state    = null;
+    let   clockInterval = null;   // local countdown ticker
+    let   localClock = null;      // local clock value while running
+
+    if (!gameId) { window.location.href = '/'; }
+
+    // ── View switching ───────────────────────────────────
+    function switchView(v) {
+      view = v;
+      const url = new URL(window.location);
+      url.searchParams.set('view', v);
+      history.replaceState(null, '', url);
+      document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+      document.getElementById('view-' + v).classList.add('active');
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById('tab-' + v).classList.add('active');
+      if (state) render();
+    }
+
+    // ── Polling ──────────────────────────────────────────
+    async function poll() {
+      try {
+        const resp = await fetch('/api/football/games/' + gameId);
+        if (!resp.ok) return;
+        const newState = await resp.json();
+
+        // Sync local clock when server says stopped or value changed significantly
+        if (!newState.play_clock_running) {
+          stopLocalClock();
+          localClock = newState.play_clock;
+        } else if (localClock === null || Math.abs(localClock - newState.play_clock) > 2) {
+          // Re-sync if drifted
+          localClock = newState.play_clock;
+          if (!clockInterval) startLocalClock();
+        } else if (!clockInterval) {
+          startLocalClock();
+        }
+
+        state = newState;
+        render();
+      } catch (e) {
+        // silent — network blip
+      }
+    }
+
+    // ── Render ───────────────────────────────────────────
+    function render() {
+      if (!state) return;
+      renderHeader();
+      if (view === 'display') renderDisplay();
+      else if (view === 'control') renderControl();
+      else if (view === 'clock') renderClock();
+    }
+
+    function renderHeader() {
+      document.getElementById('header-score').textContent =
+        `${state.home_team} ${state.home_score} – ${state.away_score} ${state.away_team}`;
+    }
+
+    function renderDisplay() {
+      const halfMap = { first:'1st Half', halftime:'Halftime', second:'2nd Half', final:'Final' };
+      const downMap = { 1:'1st', 2:'2nd', 3:'3rd', 4:'4th' };
+      const distMap = { midfield:'Midfield', goal:'Goal' };
+
+      setText('d-half', halfMap[state.half] || state.half);
+      setText('d-down-dist', `${downMap[state.down]} & ${distMap[state.distance]}`);
+
+      setText('d-home-name', state.home_team.toUpperCase());
+      setText('d-away-name', state.away_team.toUpperCase());
+      setText('d-home-score', state.home_score);
+      setText('d-away-score', state.away_score);
+
+      const homeEl = document.getElementById('d-home-name');
+      const awayEl = document.getElementById('d-away-name');
+      homeEl.classList.toggle('has-ball', state.possession === 'home');
+      awayEl.classList.toggle('has-ball', state.possession === 'away');
+
+      // Possession arrow
+      const arrow = state.possession === 'home' ? '←' : '→';
+      setText('d-poss-arrow', arrow);
+
+      // Timeout dots
+      renderDots('d-home-timeouts', state.home_timeouts, 'd-timeout-dot');
+      renderDots('d-away-timeouts', state.away_timeouts, 'd-timeout-dot');
+
+      // Clock
+      const clockVal = localClock !== null ? localClock : state.play_clock;
+      const clockEl = document.getElementById('d-clock');
+      clockEl.textContent = clockVal;
+      clockEl.classList.toggle('running', state.play_clock_running);
+
+      // NRZ
+      document.getElementById('d-nrz').style.display = state.no_run_zone ? 'block' : 'none';
+    }
+
+    function renderControl() {
+      const downMap = { 1:'1st', 2:'2nd', 3:'3rd', 4:'4th' };
+      const distMap = { midfield:'Midfield', goal:'Goal' };
+      const halfMap = { first:'1st Half', halftime:'Halftime', second:'2nd Half', final:'Final' };
+
+      setText('c-home-label', state.home_team);
+      setText('c-away-label', state.away_team);
+      setText('c-home-score', state.home_score);
+      setText('c-away-score', state.away_score);
+
+      // Down & distance active states
+      [1,2,3,4].forEach(d => {
+        document.getElementById('down-' + d)?.classList.toggle('active', state.down === d);
+      });
+      ['midfield','goal'].forEach(d => {
+        document.getElementById('dist-' + d)?.classList.toggle('active', state.distance === d);
+      });
+
+      // Possession
+      const ph = document.getElementById('poss-home');
+      const pa = document.getElementById('poss-away');
+      if (ph) { ph.textContent = '← ' + state.home_team; ph.classList.toggle('active', state.possession === 'home'); }
+      if (pa) { pa.textContent = state.away_team + ' →'; pa.classList.toggle('active', state.possession === 'away'); }
+
+      // Timeouts
+      setText('c-home-to-label', state.home_team);
+      setText('c-away-to-label', state.away_team);
+      renderDots('c-home-to-dots', state.home_timeouts, 'ctrl-dot', 3);
+      renderDots('c-away-to-dots', state.away_timeouts, 'ctrl-dot', 3);
+
+      // Half active
+      ['first','halftime','second','final'].forEach(h => {
+        document.getElementById('half-' + h)?.classList.toggle('active', state.half === h);
+      });
+
+      // Clock
+      const clockVal = localClock !== null ? localClock : state.play_clock;
+      const clEl = document.getElementById('c-clock-display');
+      if (clEl) {
+        clEl.textContent = clockVal;
+        clEl.classList.toggle('running', state.play_clock_running);
+      }
+      const toggleBtn = document.getElementById('clock-toggle-btn');
+      if (toggleBtn) toggleBtn.textContent = state.play_clock_running ? 'Stop' : 'Start';
+
+      // NRZ
+      document.getElementById('nrz-btn')?.classList.toggle('active', state.no_run_zone);
+    }
+
+    function renderClock() {
+      const clockVal = localClock !== null ? localClock : state.play_clock;
+      const halfMap = { first:'1st Half', halftime:'Halftime', second:'2nd Half', final:'Final' };
+      const ckEl = document.getElementById('ck-clock');
+      if (ckEl) {
+        ckEl.textContent = clockVal;
+        ckEl.classList.toggle('running', state.play_clock_running);
+        ckEl.classList.toggle('expired', clockVal === 0);
+      }
+      setText('ck-teams', `${state.home_team} ${state.home_score} – ${state.away_score} ${state.away_team}`);
+      setText('ck-half', halfMap[state.half] || state.half);
+    }
+
+    // ── Local clock management ───────────────────────────
+    function startLocalClock() {
+      if (clockInterval) return;
+      clockInterval = setInterval(() => {
+        if (localClock !== null && localClock > 0) {
+          localClock--;
+          if (view === 'control') {
+            const clEl = document.getElementById('c-clock-display');
+            if (clEl) clEl.textContent = localClock;
+            // Push to server every second
+            patch('play-clock', { seconds: localClock });
+          } else if (view === 'clock') {
+            const ckEl = document.getElementById('ck-clock');
+            if (ckEl) { ckEl.textContent = localClock; ckEl.classList.toggle('expired', localClock === 0); }
+          } else if (view === 'display') {
+            const dEl = document.getElementById('d-clock');
+            if (dEl) dEl.textContent = localClock;
+          }
+        } else if (localClock === 0) {
+          stopLocalClock();
+          patch('play-clock', { seconds: 0, running: false });
+          if (state) state.play_clock_running = false;
+          render();
+        }
+      }, 1000);
+    }
+
+    function stopLocalClock() {
+      if (clockInterval) { clearInterval(clockInterval); clockInterval = null; }
+    }
+
+    // ── API helpers ──────────────────────────────────────
+    async function patch(endpoint, body) {
+      const resp = await fetch(`/api/football/games/${gameId}/${endpoint}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (resp.ok) {
+        state = await resp.json();
+        render();
+      }
+    }
+
+    // ── Actions ──────────────────────────────────────────
+    async function addScore(team, delta) {
+      await patch('score', { team, delta });
+    }
+
+    async function setDown(d) {
+      const dist = state?.distance || 'midfield';
+      await patch('down', { down: d, distance: dist });
+    }
+
+    async function setDistance(d) {
+      const down = state?.down || 1;
+      await patch('down', { down, distance: d });
+    }
+
+    async function setPossession(p) {
+      await patch('possession', { possession: p });
+    }
+
+    async function useTimeout(team) {
+      await patch('timeout', { team });
+    }
+
+    async function restoreTimeout(team) {
+      await patch('timeout/restore', { team });
+    }
+
+    async function setHalf(h) {
+      await patch('half', { half: h });
+    }
+
+    async function toggleClock() {
+      if (!state) return;
+      if (state.play_clock_running) {
+        // Stop
+        stopLocalClock();
+        await patch('play-clock', { running: false });
+      } else {
+        // Start
+        if (localClock === null) localClock = state.play_clock;
+        startLocalClock();
+        await patch('play-clock', { running: true });
+      }
+    }
+
+    async function resetClock() {
+      stopLocalClock();
+      const defaultSecs = state ? state.play_clock : 40;
+      // Reset to original configured value — re-fetch to get it
+      // We store initial clock from creation; use current non-zero value or 40
+      const resetTo = defaultSecs > 0 ? defaultSecs : 40;
+      localClock = resetTo;
+      await patch('play-clock', { seconds: resetTo, running: false });
+    }
+
+    async function toggleNRZ() {
+      if (!state) return;
+      await patch('no-run-zone', { enabled: !state.no_run_zone });
+    }
+
+    // ── DOM helpers ──────────────────────────────────────
+    function setText(id, val) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    }
+
+    function renderDots(containerId, count, cssClass, maxDots) {
+      const el = document.getElementById(containerId);
+      if (!el) return;
+      const max = maxDots ?? count;
+      let html = '';
+      for (let i = 0; i < max; i++) {
+        html += `<span class="${cssClass}${i >= count ? ' used' : ''}"></span>`;
+      }
+      el.innerHTML = html;
+    }
+
+    // ── Init ─────────────────────────────────────────────
+    switchView(view);
+    poll();
+    setInterval(poll, 200);
+  </script>
+</body>
+</html>

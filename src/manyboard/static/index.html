@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Many Board</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #16213e;
+      border-bottom: 1px solid #0f3460;
+      padding: 0 20px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .brand { font-size: 18px; font-weight: 700; color: #e94560; }
+
+    main { flex: 1; padding: 24px; max-width: 960px; }
+
+    .section-header {
+      font-size: 13px;
+      font-weight: 700;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 32px; }
+
+    .card {
+      background: #1a1a2e;
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 14px 16px;
+      transition: border-color 0.15s;
+      min-width: 240px;
+      flex: 1 1 240px;
+      max-width: 320px;
+    }
+    .card:hover { border-color: #555; }
+
+    .card-sport {
+      font-size: 11px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .card-teams { font-size: 14px; font-weight: 700; color: #4fc3f7; margin-bottom: 8px; }
+
+    .card-score {
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      font-family: monospace;
+      margin-bottom: 8px;
+    }
+
+    .card-state {
+      font-size: 11px;
+      color: #888;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    .dot-active { background: #3498db; animation: pulse 1s ease-in-out infinite; }
+    .dot-final  { background: #666; }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .card-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid #333;
+      background: transparent;
+      color: #888;
+      transition: all 0.15s;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn:hover { border-color: #e94560; color: #e94560; }
+
+    .btn-primary {
+      background: #e94560;
+      color: white;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-primary:hover { background: #c0392b; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: #1a1a2e;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 24px;
+      width: 440px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-title { font-size: 16px; color: #e94560; font-weight: 700; margin-bottom: 20px; }
+
+    .form-group { margin-bottom: 14px; }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: #888;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    input, select {
+      background: #111;
+      color: #e0e0e0;
+      border: 1px solid #333;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      width: 100%;
+      font-family: inherit;
+    }
+    input:focus, select:focus { border-color: #e94560; }
+
+    .form-row { display: flex; gap: 12px; }
+    .form-row .form-group { flex: 1; }
+
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+    .empty-state { color: #555; font-size: 14px; padding: 12px 0; }
+
+    .hint { font-size: 11px; color: #555; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="brand">MANY BOARD</span>
+  </header>
+
+  <main>
+    <div class="section-header">
+      <span>Games</span>
+      <button class="btn-primary" onclick="openModal()">+ New Game</button>
+    </div>
+    <div class="card-grid" id="games-list">
+      <div class="empty-state">Loading...</div>
+    </div>
+  </main>
+
+  <!-- Create Game Modal -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <div class="modal-title">New Game</div>
+
+      <div class="form-group">
+        <label>Sport</label>
+        <select id="sport-select">
+          <option value="football">Flag Football</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Home Team</label>
+          <input id="home-team" type="text" placeholder="Team name" maxlength="20">
+        </div>
+        <div class="form-group">
+          <label>Away Team</label>
+          <input id="away-team" type="text" placeholder="Team name" maxlength="20">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Play Clock (sec)</label>
+          <input id="play-clock" type="number" value="40" min="5" max="99">
+        </div>
+        <div class="form-group">
+          <label>Timeouts per Team</label>
+          <input id="timeouts" type="number" value="3" min="0" max="9">
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn-primary" onclick="createGame()">Create Game</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let games = [];
+
+    async function loadGames() {
+      try {
+        const resp = await fetch('/api/football/games');
+        games = await resp.json();
+        renderGames();
+      } catch (e) {
+        console.error('Failed to load games', e);
+      }
+    }
+
+    function renderGames() {
+      const el = document.getElementById('games-list');
+      if (!games.length) {
+        el.innerHTML = '<div class="empty-state">No games yet. Create one to get started.</div>';
+        return;
+      }
+      el.innerHTML = games.map(g => {
+        const isFinal = g.half === 'final';
+        const dotClass = isFinal ? 'dot-final' : 'dot-active';
+        const halfLabel = { first: '1st Half', halftime: 'Halftime', second: '2nd Half', final: 'Final' }[g.half] || g.half;
+        const downLabel = ['', '1st', '2nd', '3rd', '4th'][g.down] || g.down;
+        const distLabel = { midfield: 'Midfield', goal: 'Goal' }[g.distance] || g.distance;
+        return `
+          <div class="card">
+            <div class="card-sport">Flag Football</div>
+            <div class="card-teams">${esc(g.home_team)} vs ${esc(g.away_team)}</div>
+            <div class="card-score">${g.home_score} &mdash; ${g.away_score}</div>
+            <div class="card-state">
+              <span class="status-dot ${dotClass}"></span>
+              ${halfLabel} &nbsp;&bull;&nbsp; ${downLabel} &amp; ${distLabel}
+            </div>
+            <div class="card-actions">
+              <a href="/football.html?game=${g.id}&view=display" class="btn">Display</a>
+              <a href="/football.html?game=${g.id}&view=control" class="btn">Control</a>
+              <a href="/football.html?game=${g.id}&view=clock" class="btn">Clock</a>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function esc(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function openModal() {
+      document.getElementById('modal').classList.add('open');
+      setTimeout(() => document.getElementById('home-team').focus(), 50);
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.remove('open');
+    }
+
+    async function createGame() {
+      const homeTeam = document.getElementById('home-team').value.trim();
+      const awayTeam = document.getElementById('away-team').value.trim();
+      if (!homeTeam || !awayTeam) { alert('Enter both team names.'); return; }
+
+      const playClock = parseInt(document.getElementById('play-clock').value) || 40;
+      const timeouts  = parseInt(document.getElementById('timeouts').value) ?? 3;
+
+      const resp = await fetch('/api/football/games', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ home_team: homeTeam, away_team: awayTeam, play_clock: playClock, home_timeouts: timeouts, away_timeouts: timeouts }),
+      });
+
+      if (resp.ok) {
+        closeModal();
+        document.getElementById('home-team').value = '';
+        document.getElementById('away-team').value = '';
+        await loadGames();
+      }
+    }
+
+    // Close modal on overlay click
+    document.getElementById('modal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeModal();
+    });
+
+    // Enter key in form
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && document.getElementById('modal').classList.contains('open')) createGame();
+      if (e.key === 'Escape') closeModal();
+    });
+
+    loadGames();
+    setInterval(loadGames, 5000);
+  </script>
+</body>
+</html>
