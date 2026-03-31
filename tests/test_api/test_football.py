@@ -21,9 +21,11 @@ def test_create_football_game(client: TestClient) -> None:
     assert data["home_timeouts"] == 3
     assert data["away_timeouts"] == 3
     assert data["play_clock"] == 40
+    assert data["play_clock_default"] == 40
     assert data["play_clock_running"] is False
     assert data["no_run_zone"] is False
     assert "id" in data
+    assert "play_clock_started_at" not in data
 
 
 def test_create_football_game_custom(client: TestClient) -> None:
@@ -203,22 +205,27 @@ def test_set_half(client: TestClient) -> None:
     assert resp.json()["half"] == "halftime"
 
 
-def test_update_play_clock_seconds(client: TestClient) -> None:
+def test_set_play_clock_seconds(client: TestClient) -> None:
     game_id = _new_game(client)
     resp = client.patch(
         f"/api/football/games/{game_id}/play-clock", json={"seconds": 25}
     )
     assert resp.status_code == 200
-    assert resp.json()["play_clock"] == 25
+    data = resp.json()
+    assert data["play_clock"] == 25
+    assert data["play_clock_running"] is False
 
 
-def test_update_play_clock_running(client: TestClient) -> None:
+def test_set_play_clock_stops_running_clock(client: TestClient) -> None:
     game_id = _new_game(client)
+    client.patch(f"/api/football/games/{game_id}/play-clock/start")
     resp = client.patch(
-        f"/api/football/games/{game_id}/play-clock", json={"running": True}
+        f"/api/football/games/{game_id}/play-clock", json={"seconds": 20}
     )
     assert resp.status_code == 200
-    assert resp.json()["play_clock_running"] is True
+    data = resp.json()
+    assert data["play_clock"] == 20
+    assert data["play_clock_running"] is False
 
 
 def test_play_clock_seconds_cannot_be_negative(client: TestClient) -> None:
@@ -227,6 +234,54 @@ def test_play_clock_seconds_cannot_be_negative(client: TestClient) -> None:
         f"/api/football/games/{game_id}/play-clock", json={"seconds": -1}
     )
     assert resp.status_code == 422
+
+
+def test_start_play_clock(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(f"/api/football/games/{game_id}/play-clock/start")
+    assert resp.status_code == 200
+    assert resp.json()["play_clock_running"] is True
+
+
+def test_stop_play_clock(client: TestClient) -> None:
+    import time
+
+    game_id = _new_game(client)
+    client.patch(f"/api/football/games/{game_id}/play-clock/start")
+    time.sleep(1.1)
+    resp = client.patch(f"/api/football/games/{game_id}/play-clock/stop")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["play_clock_running"] is False
+    assert data["play_clock"] <= 39  # at least 1 second elapsed
+
+
+def test_start_clock_at_zero_is_rejected(client: TestClient) -> None:
+    game_id = _new_game(client)
+    client.patch(f"/api/football/games/{game_id}/play-clock", json={"seconds": 0})
+    resp = client.patch(f"/api/football/games/{game_id}/play-clock/start")
+    assert resp.status_code == 400
+
+
+def test_reset_play_clock(client: TestClient) -> None:
+    game_id = _new_game(client)
+    client.patch(f"/api/football/games/{game_id}/play-clock", json={"seconds": 15})
+    resp = client.patch(f"/api/football/games/{game_id}/play-clock/reset")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["play_clock"] == 40  # back to default
+    assert data["play_clock_running"] is False
+
+
+def test_get_returns_computed_clock_while_running(client: TestClient) -> None:
+    import time
+
+    game_id = _new_game(client)
+    client.patch(f"/api/football/games/{game_id}/play-clock/start")
+    time.sleep(1.1)
+    resp = client.get(f"/api/football/games/{game_id}")
+    assert resp.status_code == 200
+    assert resp.json()["play_clock"] <= 39  # computed, not raw stored value
 
 
 def test_updated_at_changes_on_update(client: TestClient) -> None:

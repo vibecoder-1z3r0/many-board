@@ -7,6 +7,11 @@ from enum import Enum, StrEnum
 from sqlmodel import Field, SQLModel
 
 
+def _utcnow() -> datetime:
+    """Naive UTC timestamp for SQLite compatibility."""
+    return datetime.now(UTC).replace(tzinfo=None)
+
+
 class Half(StrEnum):
     FIRST = "first"
     HALFTIME = "halftime"
@@ -45,11 +50,16 @@ class FootballGame(SQLModel, table=True):
     possession: Possession = Field(default=Possession.HOME)
     home_timeouts: int = Field(default=3, ge=0)
     away_timeouts: int = Field(default=3, ge=0)
+    # play_clock_default: configured duration, used for reset
+    play_clock_default: int = Field(default=40, ge=1)
+    # play_clock: remaining seconds as of play_clock_started_at (or now, if stopped)
     play_clock: int = Field(default=40, ge=0)
     play_clock_running: bool = Field(default=False)
+    play_clock_started_at: datetime | None = Field(default=None)
     no_run_zone: bool = Field(default=False)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    # Naive UTC datetimes — SQLite does not preserve timezone info
+    created_at: datetime = Field(default_factory=_utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
 
 
 class FootballGameCreate(SQLModel):
@@ -57,4 +67,26 @@ class FootballGameCreate(SQLModel):
     away_team: str
     home_timeouts: int = Field(default=3, ge=0)
     away_timeouts: int = Field(default=3, ge=0)
-    play_clock: int = Field(default=40, ge=0)
+    play_clock: int = Field(default=40, ge=1)
+
+
+class FootballGameRead(SQLModel):
+    """Response schema — exposes computed play_clock, hides started_at."""
+
+    id: str
+    home_team: str
+    away_team: str
+    home_score: int
+    away_score: int
+    half: Half
+    down: int
+    distance: Distance
+    possession: Possession
+    home_timeouts: int
+    away_timeouts: int
+    play_clock_default: int
+    play_clock: int  # current computed value
+    play_clock_running: bool
+    no_run_zone: bool
+    created_at: datetime
+    updated_at: datetime

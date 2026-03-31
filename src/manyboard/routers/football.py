@@ -13,6 +13,7 @@ from manyboard.models.football import (
     Down,
     FootballGame,
     FootballGameCreate,
+    FootballGameRead,
     Half,
     Possession,
 )
@@ -51,9 +52,10 @@ class HalfUpdate(BaseModel):
     half: Half
 
 
-class PlayClockUpdate(BaseModel):
-    seconds: Annotated[int, Field(ge=0)] | None = None
-    running: bool | None = None
+class PlayClockSet(BaseModel):
+    """Set clock to a specific value (stops the clock)."""
+
+    seconds: Annotated[int, Field(ge=0)]
 
 
 # --- Helpers ---
@@ -66,46 +68,74 @@ def _get_game(game_id: str, session: Session) -> FootballGame:
     return game
 
 
+def _now() -> datetime:
+    """Naive UTC timestamp — SQLite does not preserve timezone info."""
+    return datetime.now(UTC).replace(tzinfo=None)
+
+
 def _save(game: FootballGame, session: Session) -> FootballGame:
-    game.updated_at = datetime.now(UTC)
+    game.updated_at = _now()
     session.add(game)
     session.commit()
     session.refresh(game)
     return game
+
+
+def _computed_clock(game: FootballGame) -> int:
+    """Current remaining seconds, accounting for elapsed time if running."""
+    if not game.play_clock_running or game.play_clock_started_at is None:
+        return game.play_clock
+    elapsed = (_now() - game.play_clock_started_at).total_seconds()
+    return max(0, game.play_clock - int(elapsed))
+
+
+def _to_read(game: FootballGame) -> FootballGameRead:
+    data = game.model_dump()
+    data["play_clock"] = _computed_clock(game)
+    return FootballGameRead.model_validate(data)
 
 
 # --- Endpoints ---
 
 
 @router.post("", status_code=201)
-def create_game(data: FootballGameCreate, session: SessionDep) -> FootballGame:
+def create_game(data: FootballGameCreate, session: SessionDep) -> FootballGameRead:
     game = FootballGame(
         home_team=data.home_team,
         away_team=data.away_team,
         home_timeouts=data.home_timeouts,
         away_timeouts=data.away_timeouts,
+        play_clock_default=data.play_clock,
         play_clock=data.play_clock,
     )
     session.add(game)
     session.commit()
     session.refresh(game)
-    return game
+    return _to_read(game)
 
 
 @router.get("")
-def list_games(session: SessionDep) -> list[FootballGame]:
-    return list(session.exec(select(FootballGame)).all())
+def list_games(session: SessionDep) -> list[FootballGameRead]:
+    return [_to_read(g) for g in session.exec(select(FootballGame)).all()]
 
 
 @router.get("/{game_id}")
-def get_game(game_id: str, session: SessionDep) -> FootballGame:
-    return _get_game(game_id, session)
+def get_game(game_id: str, session: SessionDep) -> FootballGameRead:
+    game = _get_game(game_id, session)
+    read = _to_read(game)
+    # Auto-stop in DB if clock expired while running
+    if game.play_clock_running and read.play_clock == 0:
+        game.play_clock = 0
+        game.play_clock_running = False
+        game.play_clock_started_at = None
+        _save(game, session)
+    return read
 
 
 @router.patch("/{game_id}/score")
 def update_score(
     game_id: str, update: ScoreUpdate, session: SessionDep
-) -> FootballGame:
+) -> FootballGameRead:
     game = _get_game(game_id, session)
     if update.team == "home":
         new_score = game.home_score + update.delta
@@ -119,28 +149,32 @@ def update_score(
         game.away_score = new_score
     else:
         raise HTTPException(status_code=422, detail="team must be 'home' or 'away'")
-    return _save(game, session)
+    return _to_read(_save(game, session))
 
 
 @router.patch("/{game_id}/down")
-def update_down(game_id: str, update: DownUpdate, session: SessionDep) -> FootballGame:
+def update_down(
+    game_id: str, update: DownUpdate, session: SessionDep
+) -> FootballGameRead:
     game = _get_game(game_id, session)
     game.down = update.down
     game.distance = update.distance
-    return _save(game, session)
+    return _to_read(_save(game, session))
 
 
 @router.patch("/{game_id}/possession")
 def update_possession(
     game_id: str, update: PossessionUpdate, session: SessionDep
-) -> FootballGame:
+) -> FootballGameRead:
     game = _get_game(game_id, session)
     game.possession = update.possession
-    return _save(game, session)
+    return _to_read(_save(game, session))
 
 
 @router.patch("/{game_id}/timeout")
-def use_timeout(game_id: str, update: TeamUpdate, session: SessionDep) -> FootballGame:
+def use_timeout(
+    game_id: str, update: TeamUpdate, session: SessionDep
+) -> FootballGameRead:
     game = _get_game(game_id, session)
     if update.team == "home":
         if game.home_timeouts <= 0:
@@ -156,13 +190,13 @@ def use_timeout(game_id: str, update: TeamUpdate, session: SessionDep) -> Footba
         game.away_timeouts -= 1
     else:
         raise HTTPException(status_code=422, detail="team must be 'home' or 'away'")
-    return _save(game, session)
+    return _to_read(_save(game, session))
 
 
 @router.patch("/{game_id}/timeout/restore")
 def restore_timeout(
     game_id: str, update: TeamUpdate, session: SessionDep
-) -> FootballGame:
+) -> FootballGameRead:
     game = _get_game(game_id, session)
     if update.team == "home":
         game.home_timeouts += 1
@@ -170,36 +204,71 @@ def restore_timeout(
         game.away_timeouts += 1
     else:
         raise HTTPException(status_code=422, detail="team must be 'home' or 'away'")
-    return _save(game, session)
+    return _to_read(_save(game, session))
 
 
 @router.patch("/{game_id}/no-run-zone")
 def update_no_run_zone(
     game_id: str, update: NoRunZoneUpdate, session: SessionDep
-) -> FootballGame:
+) -> FootballGameRead:
     game = _get_game(game_id, session)
     game.no_run_zone = update.enabled
-    return _save(game, session)
+    return _to_read(_save(game, session))
 
 
 @router.patch("/{game_id}/half")
-def update_half(game_id: str, update: HalfUpdate, session: SessionDep) -> FootballGame:
+def update_half(
+    game_id: str, update: HalfUpdate, session: SessionDep
+) -> FootballGameRead:
     game = _get_game(game_id, session)
     game.half = update.half
-    return _save(game, session)
+    return _to_read(_save(game, session))
 
 
 @router.patch("/{game_id}/play-clock")
-def update_play_clock(
-    game_id: str, update: PlayClockUpdate, session: SessionDep
-) -> FootballGame:
+def set_play_clock(
+    game_id: str, update: PlayClockSet, session: SessionDep
+) -> FootballGameRead:
+    """Set clock to a specific value and stop it."""
     game = _get_game(game_id, session)
-    if update.seconds is not None:
-        game.play_clock = update.seconds
-    if update.running is not None:
-        game.play_clock_running = update.running
-    return _save(game, session)
+    game.play_clock = update.seconds
+    game.play_clock_running = False
+    game.play_clock_started_at = None
+    return _to_read(_save(game, session))
 
 
-# Keep unused imports from triggering linter — Down/Half used indirectly via enums
+@router.patch("/{game_id}/play-clock/reset")
+def reset_play_clock(game_id: str, session: SessionDep) -> FootballGameRead:
+    """Reset clock to configured default and stop it."""
+    game = _get_game(game_id, session)
+    game.play_clock = game.play_clock_default
+    game.play_clock_running = False
+    game.play_clock_started_at = None
+    return _to_read(_save(game, session))
+
+
+@router.patch("/{game_id}/play-clock/start")
+def start_play_clock(game_id: str, session: SessionDep) -> FootballGameRead:
+    """Start the clock countdown from current remaining seconds."""
+    game = _get_game(game_id, session)
+    if game.play_clock <= 0:
+        raise HTTPException(status_code=400, detail="Clock is already at zero")
+    if not game.play_clock_running:
+        game.play_clock_running = True
+        game.play_clock_started_at = _now()
+    return _to_read(_save(game, session))
+
+
+@router.patch("/{game_id}/play-clock/stop")
+def stop_play_clock(game_id: str, session: SessionDep) -> FootballGameRead:
+    """Stop the clock and persist current remaining seconds."""
+    game = _get_game(game_id, session)
+    if game.play_clock_running:
+        game.play_clock = _computed_clock(game)
+        game.play_clock_running = False
+        game.play_clock_started_at = None
+    return _to_read(_save(game, session))
+
+
+# Keep unused imports quiet
 __all__ = ["router", "Down", "Half"]

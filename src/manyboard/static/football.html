@@ -525,12 +525,13 @@
 
   <script>
     // ── State ────────────────────────────────────────────
-    const params   = new URLSearchParams(window.location.search);
-    const gameId   = params.get('game');
-    let   view     = params.get('view') || 'display';
-    let   state    = null;
-    let   clockInterval = null;   // local countdown ticker
-    let   localClock = null;      // local clock value while running
+    const params = new URLSearchParams(window.location.search);
+    const gameId = params.get('game');
+    let view     = params.get('view') || 'display';
+    let state    = null;
+    // localClock: client-side interpolation value for smooth display.
+    // Always resynced from server on every poll. Never pushed to server.
+    let localClock = null;
 
     if (!gameId) { window.location.href = '/'; }
 
@@ -547,31 +548,29 @@
       if (state) render();
     }
 
-    // ── Polling ──────────────────────────────────────────
+    // ── Polling — server is source of truth ─────────────
     async function poll() {
       try {
         const resp = await fetch('/api/football/games/' + gameId);
         if (!resp.ok) return;
-        const newState = await resp.json();
-
-        // Sync local clock when server says stopped or value changed significantly
-        if (!newState.play_clock_running) {
-          stopLocalClock();
-          localClock = newState.play_clock;
-        } else if (localClock === null || Math.abs(localClock - newState.play_clock) > 2) {
-          // Re-sync if drifted
-          localClock = newState.play_clock;
-          if (!clockInterval) startLocalClock();
-        } else if (!clockInterval) {
-          startLocalClock();
-        }
-
-        state = newState;
+        state = await resp.json();
+        // Always resync local display clock from server's computed value
+        localClock = state.play_clock;
         render();
       } catch (e) {
         // silent — network blip
       }
     }
+
+    // ── Local interpolation between polls (display only) ─
+    // Decrements localClock every second when running, for smooth display.
+    // The next poll will resync it to the authoritative server value.
+    setInterval(() => {
+      if (state?.play_clock_running && localClock !== null && localClock > 0) {
+        localClock = Math.max(0, localClock - 1);
+        renderClockElements();
+      }
+    }, 1000);
 
     // ── Render ───────────────────────────────────────────
     function render() {
@@ -587,6 +586,21 @@
         `${state.home_team} ${state.home_score} – ${state.away_score} ${state.away_team}`;
     }
 
+    function renderClockElements() {
+      const val = localClock ?? 0;
+      const running = state?.play_clock_running ?? false;
+      setText('d-clock', val);
+      setText('c-clock-display', val);
+      setText('ck-clock', val);
+      document.getElementById('d-clock')?.classList.toggle('running', running);
+      document.getElementById('c-clock-display')?.classList.toggle('running', running);
+      const ckEl = document.getElementById('ck-clock');
+      if (ckEl) {
+        ckEl.classList.toggle('running', running);
+        ckEl.classList.toggle('expired', val === 0);
+      }
+    }
+
     function renderDisplay() {
       const halfMap = { first:'1st Half', halftime:'Halftime', second:'2nd Half', final:'Final' };
       const downMap = { 1:'1st', 2:'2nd', 3:'3rd', 4:'4th' };
@@ -594,199 +608,94 @@
 
       setText('d-half', halfMap[state.half] || state.half);
       setText('d-down-dist', `${downMap[state.down]} & ${distMap[state.distance]}`);
-
       setText('d-home-name', state.home_team.toUpperCase());
       setText('d-away-name', state.away_team.toUpperCase());
       setText('d-home-score', state.home_score);
       setText('d-away-score', state.away_score);
 
-      const homeEl = document.getElementById('d-home-name');
-      const awayEl = document.getElementById('d-away-name');
-      homeEl.classList.toggle('has-ball', state.possession === 'home');
-      awayEl.classList.toggle('has-ball', state.possession === 'away');
+      document.getElementById('d-home-name')?.classList.toggle('has-ball', state.possession === 'home');
+      document.getElementById('d-away-name')?.classList.toggle('has-ball', state.possession === 'away');
+      setText('d-poss-arrow', state.possession === 'home' ? '←' : '→');
 
-      // Possession arrow
-      const arrow = state.possession === 'home' ? '←' : '→';
-      setText('d-poss-arrow', arrow);
-
-      // Timeout dots
       renderDots('d-home-timeouts', state.home_timeouts, 'd-timeout-dot');
       renderDots('d-away-timeouts', state.away_timeouts, 'd-timeout-dot');
-
-      // Clock
-      const clockVal = localClock !== null ? localClock : state.play_clock;
-      const clockEl = document.getElementById('d-clock');
-      clockEl.textContent = clockVal;
-      clockEl.classList.toggle('running', state.play_clock_running);
-
-      // NRZ
+      renderClockElements();
       document.getElementById('d-nrz').style.display = state.no_run_zone ? 'block' : 'none';
     }
 
     function renderControl() {
-      const downMap = { 1:'1st', 2:'2nd', 3:'3rd', 4:'4th' };
-      const distMap = { midfield:'Midfield', goal:'Goal' };
-      const halfMap = { first:'1st Half', halftime:'Halftime', second:'2nd Half', final:'Final' };
-
       setText('c-home-label', state.home_team);
       setText('c-away-label', state.away_team);
       setText('c-home-score', state.home_score);
       setText('c-away-score', state.away_score);
 
-      // Down & distance active states
-      [1,2,3,4].forEach(d => {
-        document.getElementById('down-' + d)?.classList.toggle('active', state.down === d);
-      });
-      ['midfield','goal'].forEach(d => {
-        document.getElementById('dist-' + d)?.classList.toggle('active', state.distance === d);
-      });
+      [1,2,3,4].forEach(d =>
+        document.getElementById('down-' + d)?.classList.toggle('active', state.down === d)
+      );
+      ['midfield','goal'].forEach(d =>
+        document.getElementById('dist-' + d)?.classList.toggle('active', state.distance === d)
+      );
 
-      // Possession
       const ph = document.getElementById('poss-home');
       const pa = document.getElementById('poss-away');
       if (ph) { ph.textContent = '← ' + state.home_team; ph.classList.toggle('active', state.possession === 'home'); }
       if (pa) { pa.textContent = state.away_team + ' →'; pa.classList.toggle('active', state.possession === 'away'); }
 
-      // Timeouts
       setText('c-home-to-label', state.home_team);
       setText('c-away-to-label', state.away_team);
       renderDots('c-home-to-dots', state.home_timeouts, 'ctrl-dot', 3);
       renderDots('c-away-to-dots', state.away_timeouts, 'ctrl-dot', 3);
 
-      // Half active
-      ['first','halftime','second','final'].forEach(h => {
-        document.getElementById('half-' + h)?.classList.toggle('active', state.half === h);
-      });
+      ['first','halftime','second','final'].forEach(h =>
+        document.getElementById('half-' + h)?.classList.toggle('active', state.half === h)
+      );
 
-      // Clock
-      const clockVal = localClock !== null ? localClock : state.play_clock;
-      const clEl = document.getElementById('c-clock-display');
-      if (clEl) {
-        clEl.textContent = clockVal;
-        clEl.classList.toggle('running', state.play_clock_running);
-      }
+      renderClockElements();
       const toggleBtn = document.getElementById('clock-toggle-btn');
       if (toggleBtn) toggleBtn.textContent = state.play_clock_running ? 'Stop' : 'Start';
 
-      // NRZ
       document.getElementById('nrz-btn')?.classList.toggle('active', state.no_run_zone);
     }
 
     function renderClock() {
-      const clockVal = localClock !== null ? localClock : state.play_clock;
       const halfMap = { first:'1st Half', halftime:'Halftime', second:'2nd Half', final:'Final' };
-      const ckEl = document.getElementById('ck-clock');
-      if (ckEl) {
-        ckEl.textContent = clockVal;
-        ckEl.classList.toggle('running', state.play_clock_running);
-        ckEl.classList.toggle('expired', clockVal === 0);
-      }
+      renderClockElements();
       setText('ck-teams', `${state.home_team} ${state.home_score} – ${state.away_score} ${state.away_team}`);
       setText('ck-half', halfMap[state.half] || state.half);
     }
 
-    // ── Local clock management ───────────────────────────
-    function startLocalClock() {
-      if (clockInterval) return;
-      clockInterval = setInterval(() => {
-        if (localClock !== null && localClock > 0) {
-          localClock--;
-          if (view === 'control') {
-            const clEl = document.getElementById('c-clock-display');
-            if (clEl) clEl.textContent = localClock;
-            // Push to server every second
-            patch('play-clock', { seconds: localClock });
-          } else if (view === 'clock') {
-            const ckEl = document.getElementById('ck-clock');
-            if (ckEl) { ckEl.textContent = localClock; ckEl.classList.toggle('expired', localClock === 0); }
-          } else if (view === 'display') {
-            const dEl = document.getElementById('d-clock');
-            if (dEl) dEl.textContent = localClock;
-          }
-        } else if (localClock === 0) {
-          stopLocalClock();
-          patch('play-clock', { seconds: 0, running: false });
-          if (state) state.play_clock_running = false;
-          render();
-        }
-      }, 1000);
-    }
-
-    function stopLocalClock() {
-      if (clockInterval) { clearInterval(clockInterval); clockInterval = null; }
-    }
-
     // ── API helpers ──────────────────────────────────────
-    async function patch(endpoint, body) {
-      const resp = await fetch(`/api/football/games/${gameId}/${endpoint}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+    async function patch(endpoint, body = null) {
+      const opts = { method: 'PATCH' };
+      if (body !== null) {
+        opts.headers = { 'Content-Type': 'application/json' };
+        opts.body = JSON.stringify(body);
+      }
+      const resp = await fetch(`/api/football/games/${gameId}/${endpoint}`, opts);
       if (resp.ok) {
         state = await resp.json();
+        localClock = state.play_clock;
         render();
       }
     }
 
     // ── Actions ──────────────────────────────────────────
-    async function addScore(team, delta) {
-      await patch('score', { team, delta });
-    }
-
-    async function setDown(d) {
-      const dist = state?.distance || 'midfield';
-      await patch('down', { down: d, distance: dist });
-    }
-
-    async function setDistance(d) {
-      const down = state?.down || 1;
-      await patch('down', { down, distance: d });
-    }
-
-    async function setPossession(p) {
-      await patch('possession', { possession: p });
-    }
-
-    async function useTimeout(team) {
-      await patch('timeout', { team });
-    }
-
-    async function restoreTimeout(team) {
-      await patch('timeout/restore', { team });
-    }
-
-    async function setHalf(h) {
-      await patch('half', { half: h });
-    }
+    async function addScore(team, delta)     { await patch('score', { team, delta }); }
+    async function setDown(d)                { await patch('down', { down: d, distance: state?.distance || 'midfield' }); }
+    async function setDistance(d)            { await patch('down', { down: state?.down || 1, distance: d }); }
+    async function setPossession(p)          { await patch('possession', { possession: p }); }
+    async function useTimeout(team)          { await patch('timeout', { team }); }
+    async function restoreTimeout(team)      { await patch('timeout/restore', { team }); }
+    async function setHalf(h)                { await patch('half', { half: h }); }
+    async function toggleNRZ()               { if (state) await patch('no-run-zone', { enabled: !state.no_run_zone }); }
 
     async function toggleClock() {
       if (!state) return;
-      if (state.play_clock_running) {
-        // Stop
-        stopLocalClock();
-        await patch('play-clock', { running: false });
-      } else {
-        // Start
-        if (localClock === null) localClock = state.play_clock;
-        startLocalClock();
-        await patch('play-clock', { running: true });
-      }
+      await patch(state.play_clock_running ? 'play-clock/stop' : 'play-clock/start');
     }
 
     async function resetClock() {
-      stopLocalClock();
-      const defaultSecs = state ? state.play_clock : 40;
-      // Reset to original configured value — re-fetch to get it
-      // We store initial clock from creation; use current non-zero value or 40
-      const resetTo = defaultSecs > 0 ? defaultSecs : 40;
-      localClock = resetTo;
-      await patch('play-clock', { seconds: resetTo, running: false });
-    }
-
-    async function toggleNRZ() {
-      if (!state) return;
-      await patch('no-run-zone', { enabled: !state.no_run_zone });
+      await patch('play-clock/reset');
     }
 
     // ── DOM helpers ──────────────────────────────────────
