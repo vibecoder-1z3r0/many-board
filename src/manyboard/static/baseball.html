@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Many Board — Baseball</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ─────────────────────────────────────────── */
+    header {
+      background: #16213e;
+      border-bottom: 1px solid #0f3460;
+      padding: 0 16px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .brand { font-size: 18px; font-weight: 700; color: #e94560; text-decoration: none; }
+    .header-score { font-size: 13px; color: #888; font-family: monospace; }
+    .view-tabs { display: flex; margin-left: auto; }
+    .tab-btn {
+      padding: 12px 18px; font-size: 13px; font-weight: 600; color: #888;
+      border-bottom: 2px solid transparent; background: transparent;
+      border-top: none; border-left: none; border-right: none;
+      cursor: pointer; text-decoration: none; display: flex; align-items: center;
+      transition: color 0.15s;
+    }
+    .tab-btn:hover { color: #e0e0e0; }
+    .tab-btn.active { color: #e94560; border-bottom-color: #e94560; }
+
+    /* ── Views ───────────────────────────────────────────── */
+    .view { display: none; flex: 1; overflow: hidden; }
+    .view.active { display: flex; }
+
+    /* ════════════════════════════════════════════════════
+       BOXSCORE VIEW
+    ════════════════════════════════════════════════════ */
+    #view-boxscore {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      padding: 24px;
+      background: #1a1a2e;
+    }
+
+    /* Box score table */
+    .bs-table-wrap { overflow-x: auto; max-width: 100%; }
+    .bs-table {
+      border-collapse: collapse;
+      font-family: monospace;
+      font-size: 18px;
+    }
+    .bs-table th, .bs-table td {
+      padding: 10px 14px;
+      text-align: center;
+      border-bottom: 1px solid #333;
+    }
+    .bs-table th {
+      font-size: 13px;
+      color: #555;
+      font-weight: 700;
+      border-bottom: 1px solid #0f3460;
+    }
+    .bs-team-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: #e0e0e0;
+      text-align: left !important;
+      min-width: 100px;
+      white-space: nowrap;
+    }
+    .bs-inning-score { color: #e0e0e0; min-width: 32px; }
+    .bs-inning-score.current { color: #4fc3f7; font-weight: 700; }
+    .bs-inning-score.empty { color: #333; }
+    .bs-total {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      border-left: 1px solid #0f3460 !important;
+    }
+    .bs-divider { border-left: 1px solid #0f3460; }
+
+    /* Status row */
+    .bs-status {
+      font-size: 20px;
+      font-weight: 700;
+      color: #4fc3f7;
+      letter-spacing: 1px;
+    }
+    .bs-status-sub { font-size: 14px; color: #888; margin-top: 4px; }
+
+    /* ── BSO display ─────────────────────────────────────── */
+    .bso-wrap {
+      display: flex;
+      gap: 32px;
+      align-items: center;
+    }
+    .bso-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .bso-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    .bso-dots { display: flex; gap: 6px; }
+    .bso-dot {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #222; border: 2px solid #333;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .bso-dot.ball-on   { background: #3498db; border-color: #3498db; }
+    .bso-dot.strike-on { background: #f39c12; border-color: #f39c12; }
+    .bso-dot.out-on    { background: #e94560; border-color: #e94560; }
+    .bso-number {
+      font-size: 28px;
+      font-weight: 700;
+      font-family: monospace;
+      line-height: 1;
+    }
+    .bso-number.ball-val   { color: #3498db; }
+    .bso-number.strike-val { color: #f39c12; }
+    .bso-number.out-val    { color: #e94560; }
+
+    /* ── Diamond ─────────────────────────────────────────── */
+    .diamond-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .diamond-label {
+      font-size: 11px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    .diamond {
+      display: grid;
+      grid-template-columns: repeat(3, 40px);
+      grid-template-rows: repeat(3, 40px);
+      gap: 4px;
+    }
+    .base {
+      width: 40px; height: 40px;
+      background: #111;
+      border: 2px solid #333;
+      border-radius: 4px;
+      transform: rotate(45deg);
+      transition: background 0.15s, border-color 0.15s;
+      cursor: default;
+    }
+    .base.occupied { background: #f39c12; border-color: #f39c12; }
+    .base.home-plate {
+      border-radius: 50%;
+      background: #222;
+      border-color: #444;
+    }
+    .base-empty { /* spacer */ }
+
+    /* ════════════════════════════════════════════════════
+       UMP CONTROL VIEW
+    ════════════════════════════════════════════════════ */
+    #view-ump {
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 12px 16px 32px;
+      gap: 0;
+    }
+
+    .ctrl-section { margin-bottom: 16px; }
+    .ctrl-header {
+      font-size: 11px; font-weight: 700; color: #555; text-transform: uppercase;
+      letter-spacing: 1px; padding-bottom: 6px; border-bottom: 1px solid #333;
+      margin-bottom: 10px;
+    }
+    .ctrl-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 6px; }
+
+    /* BSO live display in ump view */
+    .ump-bso {
+      display: flex;
+      gap: 20px;
+      padding: 12px 0;
+      align-items: center;
+    }
+    .ump-bso-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .ump-bso-label { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 1px; }
+    .ump-bso-val {
+      font-size: 40px;
+      font-weight: 700;
+      font-family: monospace;
+      line-height: 1;
+    }
+    .ump-bso-dots { display: flex; gap: 5px; }
+    .ump-bso-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      background: #222; border: 2px solid #333;
+    }
+    .ump-bso-dot.on { }
+
+    /* Buttons */
+    .btn {
+      padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;
+      cursor: pointer; border: 1px solid #333; background: transparent; color: #888;
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .btn:hover { border-color: #e94560; color: #e94560; }
+    .btn:active { opacity: 0.7; }
+
+    .btn-big {
+      padding: 14px 20px; border-radius: 8px; font-size: 16px; font-weight: 700;
+      cursor: pointer; border: 2px solid; transition: all 0.15s; min-width: 90px;
+      text-align: center;
+    }
+    .btn-big:active { opacity: 0.7; transform: scale(0.97); }
+
+    .btn-ball   { background: #1a2a3e; color: #3498db; border-color: #3498db; }
+    .btn-ball:hover   { background: #3498db; color: #fff; }
+    .btn-strike { background: #2e1a0e; color: #f39c12; border-color: #f39c12; }
+    .btn-strike:hover { background: #f39c12; color: #111; }
+    .btn-foul   { background: #2a1a0e; color: #e67e22; border-color: #e67e22; }
+    .btn-foul:hover   { background: #e67e22; color: #111; }
+    .btn-out    { background: #2e0e0e; color: #e94560; border-color: #e94560; }
+    .btn-out:hover    { background: #e94560; color: #fff; }
+    .btn-run    { background: #0e2e0e; color: #2ecc71; border-color: #2ecc71; }
+    .btn-run:hover    { background: #2ecc71; color: #111; }
+
+    .btn-primary {
+      background: #e94560; color: white; border: none; padding: 8px 18px;
+      border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-primary:hover { background: #c0392b; }
+
+    /* Diamond in ump view (tappable) */
+    .ump-diamond { display: grid; grid-template-columns: repeat(3, 44px); grid-template-rows: repeat(3, 44px); gap: 4px; }
+    .ump-base {
+      width: 44px; height: 44px; background: #111; border: 2px solid #333;
+      border-radius: 4px; transform: rotate(45deg); cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .ump-base.occupied { background: #f39c12; border-color: #f39c12; }
+    .ump-base.home-plate { border-radius: 50%; background: #222; border-color: #444; cursor: default; }
+    .ump-base:hover:not(.home-plate) { border-color: #888; }
+
+    /* Inning score inline edit */
+    .inning-edit-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .inning-edit-input {
+      background: #111; color: #e0e0e0; border: 1px solid #333; padding: 6px 8px;
+      border-radius: 6px; font-size: 13px; outline: none; width: 60px; text-align: center;
+    }
+    .inning-edit-input:focus { border-color: #e94560; }
+
+    /* Team name editing */
+    .team-name-input {
+      background: #111; color: #e0e0e0; border: 1px solid #333; padding: 5px 8px;
+      border-radius: 6px; font-size: 13px; outline: none; max-width: 120px;
+    }
+    .team-name-input:focus { border-color: #e94560; }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="/" class="brand">MANY BOARD</a>
+    <span class="header-score" id="header-score"></span>
+    <nav class="view-tabs">
+      <button class="tab-btn" id="tab-boxscore" onclick="switchView('boxscore')">Box Score</button>
+      <button class="tab-btn" id="tab-ump"      onclick="switchView('ump')">Ump</button>
+    </nav>
+  </header>
+
+  <!-- ── BOX SCORE VIEW ────────────────────────────────── -->
+  <div class="view" id="view-boxscore">
+
+    <div class="bs-table-wrap">
+      <table class="bs-table">
+        <thead>
+          <tr id="bs-header-row">
+            <th></th>
+            <!-- inning headers injected by JS -->
+            <th class="bs-divider">R</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr id="bs-away-row">
+            <td class="bs-team-name" id="bs-away-name"></td>
+            <!-- scores injected -->
+            <td class="bs-total" id="bs-away-total"></td>
+          </tr>
+          <tr id="bs-home-row">
+            <td class="bs-team-name" id="bs-home-name"></td>
+            <!-- scores injected -->
+            <td class="bs-total" id="bs-home-total"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="text-align:center">
+      <div class="bs-status" id="bs-inning-label"></div>
+    </div>
+
+    <div style="display:flex; gap:48px; align-items:flex-start; justify-content:center; flex-wrap:wrap;">
+      <!-- BSO -->
+      <div class="bso-wrap" id="bs-bso"></div>
+
+      <!-- Diamond -->
+      <div class="diamond-wrap">
+        <div class="diamond-label">Bases</div>
+        <div class="diamond">
+          <div class="base-empty"></div>
+          <div class="base" id="bs-base-2nd"></div>
+          <div class="base-empty"></div>
+          <div class="base" id="bs-base-3rd"></div>
+          <div class="base-empty"></div>
+          <div class="base" id="bs-base-1st"></div>
+          <div class="base-empty"></div>
+          <div class="base home-plate" id="bs-base-home"></div>
+          <div class="base-empty"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── UMP CONTROL VIEW ──────────────────────────────── -->
+  <div class="view" id="view-ump">
+
+    <!-- Live BSO count -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">Count</div>
+      <div class="ump-bso" id="ump-bso-display"></div>
+    </div>
+
+    <!-- Main ump buttons -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">Actions</div>
+      <div class="ctrl-row">
+        <button class="btn-big btn-ball"   onclick="api('ball')">Ball</button>
+        <button class="btn-big btn-strike" onclick="api('strike')">Strike</button>
+        <button class="btn-big btn-foul"   onclick="api('foul')">Foul</button>
+        <button class="btn-big btn-out"    onclick="api('out')">Out</button>
+        <button class="btn-big btn-run"    onclick="api('run')">+1 Run</button>
+      </div>
+      <div class="ctrl-row" style="margin-top:4px;">
+        <button class="btn" onclick="api('count/reset')">Reset Count</button>
+      </div>
+    </div>
+
+    <!-- Bases (tappable diamond) -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">Bases</div>
+      <div style="display:flex; align-items:center; gap:24px; flex-wrap:wrap;">
+        <div class="ump-diamond">
+          <div class="base-empty"></div>
+          <div class="ump-base" id="ump-base-2nd" onclick="toggleBase('second')"></div>
+          <div class="base-empty"></div>
+          <div class="ump-base" id="ump-base-3rd" onclick="toggleBase('third')"></div>
+          <div class="base-empty"></div>
+          <div class="ump-base" id="ump-base-1st" onclick="toggleBase('first')"></div>
+          <div class="base-empty"></div>
+          <div class="ump-base home-plate"></div>
+          <div class="base-empty"></div>
+        </div>
+        <button class="btn" onclick="clearBases()">Clear Bases</button>
+      </div>
+    </div>
+
+    <!-- Scoring correction -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">Score Correction</div>
+      <div class="ctrl-row inning-edit-row">
+        <span style="font-size:12px;color:#888;">Inning</span>
+        <input class="inning-edit-input" id="edit-inning" type="number" min="1" value="1">
+        <span style="font-size:12px;color:#888;">Half</span>
+        <select id="edit-half" style="background:#111;color:#e0e0e0;border:1px solid #333;padding:5px 8px;border-radius:6px;font-size:13px;outline:none;">
+          <option value="top">Top (Away)</option>
+          <option value="bottom">Bottom (Home)</option>
+        </select>
+        <span style="font-size:12px;color:#888;">Runs</span>
+        <input class="inning-edit-input" id="edit-runs" type="number" min="0" value="0">
+        <button class="btn-primary" onclick="setInningScore()">Set</button>
+      </div>
+    </div>
+
+    <!-- Inning nav -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">Navigate</div>
+      <div class="ctrl-row">
+        <span style="font-size:12px;color:#888;">Jump to</span>
+        <input class="inning-edit-input" id="nav-inning" type="number" min="1" value="1" style="width:52px;">
+        <select id="nav-half" style="background:#111;color:#e0e0e0;border:1px solid #333;padding:5px 8px;border-radius:6px;font-size:13px;outline:none;">
+          <option value="top">Top</option>
+          <option value="bottom">Bottom</option>
+        </select>
+        <button class="btn" onclick="navInning()">Go</button>
+      </div>
+      <div class="ctrl-row" style="margin-top:4px;">
+        <button class="btn" onclick="api('inning/add')">+ Inning</button>
+        <button class="btn" onclick="api('inning/remove')" style="color:#e94560;border-color:#e94560;">− Inning</button>
+      </div>
+    </div>
+
+    <!-- BSO style -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">Display Style</div>
+      <div class="ctrl-row">
+        <button class="btn" id="style-dots"    onclick="setBsoStyle('dots')">Dots</button>
+        <button class="btn" id="style-numbers" onclick="setBsoStyle('numbers')">Numbers</button>
+        <button class="btn" id="style-both"    onclick="setBsoStyle('both')">Both</button>
+      </div>
+    </div>
+
+    <!-- Team names -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">Team Names</div>
+      <div class="ctrl-row">
+        <span style="font-size:12px;color:#888;">Away</span>
+        <input class="team-name-input" id="edit-away" type="text" maxlength="20" placeholder="Away">
+        <span style="font-size:12px;color:#888;">Home</span>
+        <input class="team-name-input" id="edit-home" type="text" maxlength="20" placeholder="Home">
+        <button class="btn-primary" onclick="saveTeamNames()">Save</button>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">Game Status</div>
+      <div class="ctrl-row">
+        <button class="btn" id="status-active" onclick="setStatus('active')">Active</button>
+        <button class="btn" id="status-final" onclick="setStatus('final')" style="color:#e94560;border-color:#e94560;">Final</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ── State ────────────────────────────────────────────
+    const params = new URLSearchParams(window.location.search);
+    const gameId = params.get('game');
+    let view  = params.get('view') || 'boxscore';
+    let state = null;
+
+    if (!gameId) { window.location.href = '/'; }
+
+    // ── View switching ───────────────────────────────────
+    function switchView(v) {
+      view = v;
+      const url = new URL(window.location);
+      url.searchParams.set('view', v);
+      history.replaceState(null, '', url);
+      document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+      document.getElementById('view-' + v).classList.add('active');
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById('tab-' + v).classList.add('active');
+      if (state) render();
+    }
+
+    // ── Polling ──────────────────────────────────────────
+    async function poll() {
+      try {
+        const resp = await fetch('/api/baseball/games/' + gameId);
+        if (!resp.ok) return;
+        state = await resp.json();
+        render();
+      } catch (e) { /* network blip */ }
+    }
+
+    // ── Render ───────────────────────────────────────────
+    function render() {
+      if (!state) return;
+      renderHeader();
+      if (view === 'boxscore') renderBoxscore();
+      else if (view === 'ump') renderUmp();
+    }
+
+    function renderHeader() {
+      document.getElementById('header-score').textContent =
+        `${state.away_team} ${state.away_total} – ${state.home_total} ${state.home_team}`;
+    }
+
+    // ── Box score ─────────────────────────────────────────
+    function renderBoxscore() {
+      const s = state;
+      setText('bs-away-name', s.away_team);
+      setText('bs-home-name', s.home_team);
+      setText('bs-away-total', s.away_total);
+      setText('bs-home-total', s.home_total);
+
+      // Rebuild inning columns
+      const headerRow = document.getElementById('bs-header-row');
+      const awayRow   = document.getElementById('bs-away-row');
+      const homeRow   = document.getElementById('bs-home-row');
+
+      // Clear old inning cells (keep first and last)
+      const clearRow = row => {
+        while (row.children.length > 2) row.removeChild(row.children[1]);
+      };
+      clearRow(headerRow);
+      clearRow(awayRow);
+      clearRow(homeRow);
+
+      for (let i = 0; i < s.num_innings; i++) {
+        const isCurrent = (i + 1) === s.current_inning;
+        const th = document.createElement('th');
+        th.textContent = i + 1;
+        if (isCurrent) th.style.color = '#4fc3f7';
+        headerRow.insertBefore(th, headerRow.lastElementChild);
+
+        const awayScore = s.scores.away[i];
+        const homeScore = s.scores.home[i];
+        const awayTd = document.createElement('td');
+        const homeTd = document.createElement('td');
+        awayTd.className = 'bs-inning-score' + (isCurrent ? ' current' : awayScore === null ? ' empty' : '');
+        homeTd.className = 'bs-inning-score' + (isCurrent ? ' current' : homeScore === null ? ' empty' : '');
+        awayTd.textContent = awayScore !== null ? awayScore : '-';
+        homeTd.textContent = homeScore !== null ? homeScore : '-';
+        awayRow.insertBefore(awayTd, awayRow.lastElementChild);
+        homeRow.insertBefore(homeTd, homeRow.lastElementChild);
+      }
+
+      // Inning / half label
+      const halfLabel = s.half === 'top' ? '▲' : '▼';
+      const ordinal = ['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th'];
+      const innLabel = ordinal[s.current_inning] || `${s.current_inning}th`;
+      if (s.status === 'final') {
+        setText('bs-inning-label', 'FINAL');
+      } else {
+        setText('bs-inning-label', `${halfLabel} ${innLabel}`);
+      }
+
+      // BSO
+      renderBSO('bs-bso', s);
+
+      // Bases
+      document.getElementById('bs-base-1st').classList.toggle('occupied', s.base_first);
+      document.getElementById('bs-base-2nd').classList.toggle('occupied', s.base_second);
+      document.getElementById('bs-base-3rd').classList.toggle('occupied', s.base_third);
+    }
+
+    function renderBSO(containerId, s) {
+      const el = document.getElementById(containerId);
+      if (!el) return;
+      const style = s.bso_style;
+      const showDots = style === 'dots' || style === 'both';
+      const showNums = style === 'numbers' || style === 'both';
+
+      const bsoItems = [
+        { label: 'Balls',   val: s.balls,   max: 4, cls: 'ball' },
+        { label: 'Strikes', val: s.strikes, max: 3, cls: 'strike' },
+        { label: 'Outs',    val: s.outs,    max: 3, cls: 'out' },
+      ];
+
+      el.innerHTML = bsoItems.map(item => `
+        <div class="bso-group">
+          <div class="bso-label">${item.label}</div>
+          ${showDots ? `<div class="bso-dots">${
+            Array.from({length: item.max}, (_, i) =>
+              `<div class="bso-dot${i < item.val ? ` ${item.cls}-on` : ''}"></div>`
+            ).join('')
+          }</div>` : ''}
+          ${showNums ? `<div class="bso-number ${item.cls}-val">${item.val}</div>` : ''}
+        </div>
+      `).join('');
+    }
+
+    // ── Ump view ──────────────────────────────────────────
+    function renderUmp() {
+      const s = state;
+
+      // BSO display
+      renderBSOUmp(s);
+
+      // Bases
+      document.getElementById('ump-base-1st').classList.toggle('occupied', s.base_first);
+      document.getElementById('ump-base-2nd').classList.toggle('occupied', s.base_second);
+      document.getElementById('ump-base-3rd').classList.toggle('occupied', s.base_third);
+
+      // BSO style buttons
+      ['dots', 'numbers', 'both'].forEach(sty => {
+        const btn = document.getElementById('style-' + sty);
+        if (btn) {
+          btn.style.borderColor = s.bso_style === sty ? '#e94560' : '';
+          btn.style.color = s.bso_style === sty ? '#e94560' : '';
+        }
+      });
+
+      // Team name inputs (only if not focused)
+      const awayIn = document.getElementById('edit-away');
+      const homeIn = document.getElementById('edit-home');
+      if (document.activeElement !== awayIn) awayIn.value = s.away_team;
+      if (document.activeElement !== homeIn) homeIn.value = s.home_team;
+
+      // Status buttons
+      document.getElementById('status-active').style.borderColor = s.status === 'active' ? '#2ecc71' : '';
+      document.getElementById('status-active').style.color = s.status === 'active' ? '#2ecc71' : '';
+      document.getElementById('status-final').style.borderColor = s.status === 'final' ? '#e94560' : '';
+      document.getElementById('status-final').style.color = s.status === 'final' ? '#e94560' : '';
+    }
+
+    function renderBSOUmp(s) {
+      const el = document.getElementById('ump-bso-display');
+      if (!el) return;
+      const style = s.bso_style;
+      const showDots = style === 'dots' || style === 'both';
+      const showNums = style === 'numbers' || style === 'both';
+
+      const items = [
+        { label: 'B', val: s.balls,   max: 4, cls: 'ball',   color: '#3498db' },
+        { label: 'S', val: s.strikes, max: 3, cls: 'strike', color: '#f39c12' },
+        { label: 'O', val: s.outs,    max: 3, cls: 'out',    color: '#e94560' },
+      ];
+
+      el.innerHTML = items.map(item => `
+        <div class="ump-bso-item">
+          <div class="ump-bso-label">${item.label}</div>
+          ${showNums ? `<div class="ump-bso-val" style="color:${item.color}">${item.val}</div>` : ''}
+          ${showDots ? `<div class="ump-bso-dots">${
+            Array.from({length: item.max}, (_, i) =>
+              `<div class="ump-bso-dot${i < item.val ? ' on' : ''}" style="${i < item.val ? `background:${item.color};border-color:${item.color}` : ''}"></div>`
+            ).join('')
+          }</div>` : ''}
+        </div>
+      `).join('');
+    }
+
+    // ── API helpers ──────────────────────────────────────
+    async function api(endpoint, body = null) {
+      const opts = { method: 'PATCH' };
+      if (body !== null) {
+        opts.headers = { 'Content-Type': 'application/json' };
+        opts.body = JSON.stringify(body);
+      }
+      const resp = await fetch(`/api/baseball/games/${gameId}/${endpoint}`, opts);
+      if (resp.ok) { state = await resp.json(); render(); }
+    }
+
+    // ── Actions ──────────────────────────────────────────
+    async function toggleBase(which) {
+      if (!state) return;
+      const map = { first: state.base_first, second: state.base_second, third: state.base_third };
+      map[which] = !map[which];
+      await api('bases', { first: map.first, second: map.second, third: map.third });
+    }
+
+    async function clearBases() {
+      await api('bases', { first: false, second: false, third: false });
+    }
+
+    async function setInningScore() {
+      const inning = parseInt(document.getElementById('edit-inning').value);
+      const half   = document.getElementById('edit-half').value;
+      const runs   = parseInt(document.getElementById('edit-runs').value);
+      if (isNaN(inning) || isNaN(runs)) return;
+      await api('inning-score', { inning, half, runs });
+    }
+
+    async function navInning() {
+      const inning = parseInt(document.getElementById('nav-inning').value);
+      const half   = document.getElementById('nav-half').value;
+      if (isNaN(inning)) return;
+      await api('inning', { inning, half });
+    }
+
+    async function setBsoStyle(style) {
+      await api('bso-style', { style });
+    }
+
+    async function saveTeamNames() {
+      const home_team = document.getElementById('edit-home').value.trim();
+      const away_team = document.getElementById('edit-away').value.trim();
+      if (!home_team && !away_team) return;
+      const body = {};
+      if (home_team) body.home_team = home_team;
+      if (away_team) body.away_team = away_team;
+      await api('teams', body);
+    }
+
+    async function setStatus(status) {
+      await api('status', { status });
+    }
+
+    // ── DOM helpers ──────────────────────────────────────
+    function setText(id, val) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    }
+
+    // ── Init ─────────────────────────────────────────────
+    switchView(view);
+    poll();
+    setInterval(poll, 200);
+  </script>
+</body>
+</html>

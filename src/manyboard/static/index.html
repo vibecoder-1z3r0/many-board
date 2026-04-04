@@ -205,30 +205,52 @@
 
       <div class="form-group">
         <label>Sport</label>
-        <select id="sport-select">
+        <select id="sport-select" onchange="updateSportFields()">
           <option value="football">Flag Football</option>
+          <option value="baseball">Baseball / Wiffleball</option>
         </select>
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label>Home Team</label>
-          <input id="home-team" type="text" placeholder="Team name" maxlength="20">
+          <input id="home-team" type="text" placeholder="Home" maxlength="20">
         </div>
         <div class="form-group">
           <label>Away Team</label>
-          <input id="away-team" type="text" placeholder="Team name" maxlength="20">
+          <input id="away-team" type="text" placeholder="Away" maxlength="20">
         </div>
       </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label>Play Clock (sec)</label>
-          <input id="play-clock" type="number" value="40" min="5" max="99">
+      <!-- Football-specific fields -->
+      <div id="fields-football">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Play Clock (sec)</label>
+            <input id="play-clock" type="number" value="40" min="5" max="99">
+          </div>
+          <div class="form-group">
+            <label>Timeouts per Team</label>
+            <input id="timeouts" type="number" value="3" min="0" max="9">
+          </div>
         </div>
-        <div class="form-group">
-          <label>Timeouts per Team</label>
-          <input id="timeouts" type="number" value="3" min="0" max="9">
+      </div>
+
+      <!-- Baseball-specific fields -->
+      <div id="fields-baseball" style="display:none">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Innings</label>
+            <input id="num-innings" type="number" value="6" min="1" max="20">
+          </div>
+          <div class="form-group">
+            <label>BSO Display</label>
+            <select id="bso-style">
+              <option value="dots">Dots</option>
+              <option value="numbers">Numbers</option>
+              <option value="both">Both</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -240,12 +262,20 @@
   </div>
 
   <script>
-    let games = [];
+    let allGames = [];
 
     async function loadGames() {
       try {
-        const resp = await fetch('/api/football/games');
-        games = await resp.json();
+        const [fbResp, bbResp] = await Promise.all([
+          fetch('/api/football/games'),
+          fetch('/api/baseball/games'),
+        ]);
+        const fb = fbResp.ok ? await fbResp.json() : [];
+        const bb = bbResp.ok ? await bbResp.json() : [];
+        allGames = [
+          ...fb.map(g => ({ ...g, _sport: 'football' })),
+          ...bb.map(g => ({ ...g, _sport: 'baseball' })),
+        ];
         renderGames();
       } catch (e) {
         console.error('Failed to load games', e);
@@ -254,40 +284,76 @@
 
     function renderGames() {
       const el = document.getElementById('games-list');
-      if (!games.length) {
+      if (!allGames.length) {
         el.innerHTML = '<div class="empty-state">No games yet. Create one to get started.</div>';
         return;
       }
-      el.innerHTML = games.map(g => {
-        const isFinal = g.half === 'final';
-        const dotClass = isFinal ? 'dot-final' : 'dot-active';
-        const halfLabel = { first: '1st Half', halftime: 'Halftime', second: '2nd Half', final: 'Final' }[g.half] || g.half;
-        const downLabel = ['', '1st', '2nd', '3rd', '4th'][g.down] || g.down;
-        const distLabel = { midfield: 'Midfield', goal: 'Goal' }[g.distance] || g.distance;
-        return `
-          <div class="card">
-            <div class="card-sport">Flag Football</div>
-            <div class="card-teams">${esc(g.home_team)} vs ${esc(g.away_team)}</div>
-            <div class="card-score">${g.home_score} &mdash; ${g.away_score}</div>
-            <div class="card-state">
-              <span class="status-dot ${dotClass}"></span>
-              ${halfLabel} &nbsp;&bull;&nbsp; ${downLabel} &amp; ${distLabel}
-            </div>
-            <div class="card-actions">
-              <a href="/football.html?game=${g.id}&view=display" class="btn">Display</a>
-              <a href="/football.html?game=${g.id}&view=control" class="btn">Control</a>
-              <a href="/football.html?game=${g.id}&view=clock" class="btn">Clock</a>
-            </div>
-          </div>`;
+      el.innerHTML = allGames.map(g => {
+        if (g._sport === 'football') return renderFootballCard(g);
+        if (g._sport === 'baseball') return renderBaseballCard(g);
+        return '';
       }).join('');
+    }
+
+    function renderFootballCard(g) {
+      const isFinal = g.half === 'final';
+      const dotClass = isFinal ? 'dot-final' : 'dot-active';
+      const halfLabel = { first: '1st Half', halftime: 'Halftime', second: '2nd Half', final: 'Final' }[g.half] || g.half;
+      const downLabel = ['', '1st', '2nd', '3rd', '4th'][g.down] || g.down;
+      const distLabel = { midfield: 'Midfield', goal: 'Goal' }[g.distance] || g.distance;
+      return `
+        <div class="card">
+          <div class="card-sport">Flag Football</div>
+          <div class="card-teams">${esc(g.home_team)} vs ${esc(g.away_team)}</div>
+          <div class="card-score">${g.home_score} &mdash; ${g.away_score}</div>
+          <div class="card-state">
+            <span class="status-dot ${dotClass}"></span>
+            ${halfLabel} &nbsp;&bull;&nbsp; ${downLabel} &amp; ${distLabel}
+          </div>
+          <div class="card-actions">
+            <a href="/football.html?game=${g.id}&view=display" class="btn">Display</a>
+            <a href="/football.html?game=${g.id}&view=control" class="btn">Control</a>
+            <a href="/football.html?game=${g.id}&view=clock" class="btn">Clock</a>
+          </div>
+        </div>`;
+    }
+
+    function renderBaseballCard(g) {
+      const isFinal = g.status === 'final';
+      const dotClass = isFinal ? 'dot-final' : 'dot-active';
+      const halfLabel = g.half === 'top' ? '▲' : '▼';
+      const ordinal = ['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th'];
+      const innLabel = ordinal[g.current_inning] || `${g.current_inning}th`;
+      const stateLabel = isFinal ? 'Final' : `${halfLabel} ${innLabel}`;
+      return `
+        <div class="card">
+          <div class="card-sport">Baseball / Wiffleball</div>
+          <div class="card-teams">${esc(g.away_team)} vs ${esc(g.home_team)}</div>
+          <div class="card-score">${g.away_total} &mdash; ${g.home_total}</div>
+          <div class="card-state">
+            <span class="status-dot ${dotClass}"></span>
+            ${stateLabel} &nbsp;&bull;&nbsp; B:${g.balls} S:${g.strikes} O:${g.outs}
+          </div>
+          <div class="card-actions">
+            <a href="/baseball.html?game=${g.id}&view=boxscore" class="btn">Box Score</a>
+            <a href="/baseball.html?game=${g.id}&view=ump" class="btn">Ump</a>
+          </div>
+        </div>`;
     }
 
     function esc(s) {
       return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
+    function updateSportFields() {
+      const sport = document.getElementById('sport-select').value;
+      document.getElementById('fields-football').style.display = sport === 'football' ? '' : 'none';
+      document.getElementById('fields-baseball').style.display = sport === 'baseball' ? '' : 'none';
+    }
+
     function openModal() {
       document.getElementById('modal').classList.add('open');
+      updateSportFields();
       setTimeout(() => document.getElementById('home-team').focus(), 50);
     }
 
@@ -296,17 +362,27 @@
     }
 
     async function createGame() {
-      const homeTeam = document.getElementById('home-team').value.trim();
-      const awayTeam = document.getElementById('away-team').value.trim();
-      if (!homeTeam || !awayTeam) { alert('Enter both team names.'); return; }
+      const sport    = document.getElementById('sport-select').value;
+      const homeTeam = document.getElementById('home-team').value.trim() || 'Home';
+      const awayTeam = document.getElementById('away-team').value.trim() || 'Away';
 
-      const playClock = parseInt(document.getElementById('play-clock').value) || 40;
-      const timeouts  = parseInt(document.getElementById('timeouts').value) ?? 3;
+      let url, body;
+      if (sport === 'football') {
+        const playClock = parseInt(document.getElementById('play-clock').value) || 40;
+        const timeouts  = parseInt(document.getElementById('timeouts').value) ?? 3;
+        url  = '/api/football/games';
+        body = { home_team: homeTeam, away_team: awayTeam, play_clock: playClock, home_timeouts: timeouts, away_timeouts: timeouts };
+      } else {
+        const numInnings = parseInt(document.getElementById('num-innings').value) || 6;
+        const bsoStyle   = document.getElementById('bso-style').value;
+        url  = '/api/baseball/games';
+        body = { home_team: homeTeam, away_team: awayTeam, num_innings: numInnings, bso_style: bsoStyle };
+      }
 
-      const resp = await fetch('/api/football/games', {
+      const resp = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ home_team: homeTeam, away_team: awayTeam, play_clock: playClock, home_timeouts: timeouts, away_timeouts: timeouts }),
+        body: JSON.stringify(body),
       });
 
       if (resp.ok) {
@@ -317,12 +393,9 @@
       }
     }
 
-    // Close modal on overlay click
     document.getElementById('modal').addEventListener('click', e => {
       if (e.target === e.currentTarget) closeModal();
     });
-
-    // Enter key in form
     document.addEventListener('keydown', e => {
       if (e.key === 'Enter' && document.getElementById('modal').classList.contains('open')) createGame();
       if (e.key === 'Escape') closeModal();

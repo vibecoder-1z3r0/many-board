@@ -52,6 +52,11 @@ class HalfUpdate(BaseModel):
     half: Half
 
 
+class TeamNamesUpdate(BaseModel):
+    home_team: str | None = None
+    away_team: str | None = None
+
+
 class PlayClockSet(BaseModel):
     """Set clock to a specific value (stops the clock)."""
 
@@ -130,6 +135,18 @@ def get_game(game_id: str, session: SessionDep) -> FootballGameRead:
         game.play_clock_started_at = None
         _save(game, session)
     return read
+
+
+@router.patch("/{game_id}/teams")
+def update_teams(
+    game_id: str, update: TeamNamesUpdate, session: SessionDep
+) -> FootballGameRead:
+    game = _get_game(game_id, session)
+    if update.home_team is not None:
+        game.home_team = update.home_team
+    if update.away_team is not None:
+        game.away_team = update.away_team
+    return _to_read(_save(game, session))
 
 
 @router.patch("/{game_id}/score")

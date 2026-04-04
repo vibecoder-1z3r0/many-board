@@ -63,8 +63,8 @@ class FootballGame(SQLModel, table=True):
 
 
 class FootballGameCreate(SQLModel):
-    home_team: str
-    away_team: str
+    home_team: str = "Home"
+    away_team: str = "Away"
     home_timeouts: int = Field(default=3, ge=0)
     away_timeouts: int = Field(default=3, ge=0)
     play_clock: int = Field(default=40, ge=1)

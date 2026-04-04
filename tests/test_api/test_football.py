@@ -284,6 +284,36 @@ def test_get_returns_computed_clock_while_running(client: TestClient) -> None:
     assert resp.json()["play_clock"] <= 39  # computed, not raw stored value
 
 
+def test_create_game_default_team_names(client: TestClient) -> None:
+    resp = client.post("/api/football/games", json={})
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["home_team"] == "Home"
+    assert data["away_team"] == "Away"
+
+
+def test_update_team_names(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(
+        f"/api/football/games/{game_id}/teams",
+        json={"home_team": "Chiefs", "away_team": "49ers"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["home_team"] == "Chiefs"
+    assert data["away_team"] == "49ers"
+
+
+def test_update_only_home_team(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(
+        f"/api/football/games/{game_id}/teams", json={"home_team": "Chiefs"}
+    )
+    assert resp.status_code == 200
+    assert resp.json()["home_team"] == "Chiefs"
+    assert resp.json()["away_team"] == "Ravens"
+
+
 def test_updated_at_changes_on_update(client: TestClient) -> None:
     game_id = _new_game(client)
     before = client.get(f"/api/football/games/{game_id}").json()["updated_at"]
