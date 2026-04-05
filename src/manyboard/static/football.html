@@ -1064,10 +1064,13 @@
         { label: state.home_team, key: 'home', total: state.home_score, poss: state.possession === 'home' },
       ];
       tbody.innerHTML = rows.map(r => {
+        const finalized = hs[r.key].reduce((sum, v) => sum + (v ?? 0), 0);
+        const liveHalf  = r.total - finalized;
         const cells = [0, 1, ...(showOT ? [2] : [])].map(i => {
           const v = hs[r.key][i];
-          const cls = v === null ? (i === activeIdx ? 'active-col' : 'empty-col') : '';
-          return `<td class="${cls}">${v === null ? (i === activeIdx ? '—' : '') : v}</td>`;
+          if (v !== null) return `<td>${v}</td>`;
+          if (i === activeIdx) return `<td class="active-col">${liveHalf}</td>`;
+          return `<td class="empty-col"></td>`;
         }).join('');
         return `<tr>
           <td class="team-col${r.poss ? ' has-ball' : ''}">${r.poss ? '▶ ' : ''}${r.label.toUpperCase()}</td>
