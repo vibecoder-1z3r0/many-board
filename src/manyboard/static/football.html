@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Many Board — Football</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -123,7 +125,7 @@
       font-size: 100px;
       font-weight: 700;
       color: #fff;
-      font-family: monospace;
+      font-family: 'Orbitron', monospace;
       line-height: 1;
     }
 
@@ -158,10 +160,9 @@
       font-size: 56px;
       font-weight: 700;
       color: #fff;
-      font-family: monospace;
+      font-family: 'Orbitron', monospace;
       line-height: 1;
     }
-    .d-clock-value.running { color: #2ecc71; animation: pulse 1s ease-in-out infinite; }
     .d-clock-label {
       font-size: 11px;
       color: #555;
@@ -235,8 +236,7 @@
     .d-to-row { display: flex; gap: 32px; align-items: center; font-size: 12px; color: #555; }
     .d-to-team { display: flex; align-items: center; gap: 8px; }
 
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-    @keyframes spin   { to { transform: rotate(360deg); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ════════════════════════════════════════════════════════
        CONTROL VIEW
@@ -361,11 +361,10 @@
       font-size: 48px;
       font-weight: 700;
       color: #fff;
-      font-family: monospace;
+      font-family: 'Orbitron', monospace;
       line-height: 1;
       margin-bottom: 10px;
     }
-    .ctrl-clock-display.running { color: #2ecc71; }
 
     .ctrl-timeout-dots { display: flex; gap: 6px; align-items: center; }
 
@@ -392,10 +391,9 @@
       font-size: 180px;
       font-weight: 700;
       color: #fff;
-      font-family: monospace;
+      font-family: 'Orbitron', monospace;
       line-height: 1;
     }
-    .clock-big.running { color: #2ecc71; }
     .clock-big.expired { color: #e94560; }
 
     .clock-teams {
