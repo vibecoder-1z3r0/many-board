@@ -7,12 +7,57 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg:          #1a1a2e;
+      --panel:       #16213e;
+      --border:      #0f3460;
+      --border-mid:  #2a2a3e;
+      --border-dark: #333;
+      --input-bg:    #111;
+      --accent:      #e94560;
+      --accent-dark: #c0392b;
+      --text:        #e0e0e0;
+      --text-dim:    #888;
+      --text-dimmer: #555;
+      --text-bright: #fff;
+      --highlight:   #4fc3f7;
+    }
+    [data-theme="stadium"] {
+      --bg:          #000000;
+      --panel:       #0d0d0d;
+      --border:      #2a2a2a;
+      --border-mid:  #1f1f1f;
+      --border-dark: #1a1a1a;
+      --input-bg:    #111111;
+      --accent:      #00e5ff;
+      --accent-dark: #00b8cc;
+      --text:        #ffffff;
+      --text-dim:    #aaaaaa;
+      --text-dimmer: #666666;
+      --text-bright: #ffffff;
+      --highlight:   #ffeb3b;
+    }
+    [data-theme="field"] {
+      --bg:          #0a1a0a;
+      --panel:       #0f200f;
+      --border:      #1e4d1e;
+      --border-mid:  #162816;
+      --border-dark: #1e3a1e;
+      --input-bg:    #071207;
+      --accent:      #f5a623;
+      --accent-dark: #d4891a;
+      --text:        #e8f0e8;
+      --text-dim:    #7a9e7a;
+      --text-dimmer: #4a6a4a;
+      --text-bright: #ffffff;
+      --highlight:   #7dff8a;
+    }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #1a1a2e;
-      color: #e0e0e0;
+      background: var(--bg);
+      color: var(--text);
       height: 100vh;
       display: flex;
       flex-direction: column;
@@ -21,8 +66,8 @@
 
     /* ── Header ─────────────────────────────────────────── */
     header {
-      background: #16213e;
-      border-bottom: 1px solid #0f3460;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
       padding: 0 20px;
       height: 48px;
       display: flex;
@@ -31,11 +76,29 @@
       flex-shrink: 0;
     }
 
-    .brand { font-size: 18px; font-weight: 700; color: #e94560; text-decoration: none; }
+    .brand { font-size: 18px; font-weight: 700; color: var(--accent); text-decoration: none; }
+
+    .theme-btn {
+      background: transparent;
+      border: 1px solid var(--border-dark);
+      color: var(--text-dim);
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: color 0.15s, border-color 0.15s;
+      padding: 0;
+    }
+    .theme-btn:hover { color: var(--text); border-color: var(--text-dim); }
 
     .header-score {
       font-size: 13px;
-      color: #888;
+      color: var(--text-dim);
       font-family: monospace;
       margin-left: 8px;
     }
@@ -58,8 +121,22 @@
     }
     .conn-status.connected { color: #2ecc71; }
     .conn-status.connected .conn-dot { background: #2ecc71; }
-    .conn-status.lost { color: #e94560; }
-    .conn-status.lost .conn-dot { background: #e94560; }
+    .conn-status.lost { color: var(--accent); }
+    .conn-status.lost .conn-dot { background: var(--accent); }
+
+    .theme-btn {
+      background: transparent;
+      border: 1px solid var(--border-dark);
+      color: var(--text-dim);
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; padding: 0;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .theme-btn:hover { color: var(--text); border-color: var(--text-dim); }
 
     .view-tabs { display: flex; }
 
@@ -67,7 +144,7 @@
       padding: 12px 18px;
       font-size: 13px;
       font-weight: 600;
-      color: #888;
+      color: var(--text-dim);
       border-bottom: 2px solid transparent;
       background: transparent;
       border-top: none;
@@ -79,8 +156,8 @@
       align-items: center;
       transition: color 0.15s;
     }
-    .tab-btn:hover { color: #e0e0e0; }
-    .tab-btn.active { color: #e94560; border-bottom-color: #e94560; }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
 
     /* ── Shared view container ───────────────────────────── */
     .view { display: none; flex: 1; overflow: hidden; }
@@ -93,7 +170,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: #1a1a2e;
+      background: var(--bg);
       padding: 32px 16px;
       gap: 20px;
     }
@@ -101,7 +178,7 @@
     .d-game-status {
       font-size: 13px;
       font-weight: 700;
-      color: #888;
+      color: var(--text-dim);
       text-transform: uppercase;
       letter-spacing: 2px;
     }
@@ -109,7 +186,7 @@
     .d-down-distance {
       font-size: 22px;
       font-weight: 700;
-      color: #4fc3f7;
+      color: var(--highlight);
       letter-spacing: 1px;
     }
 
@@ -135,26 +212,26 @@
     .d-team-name {
       font-size: 32px;
       font-weight: 700;
-      color: #e0e0e0;
+      color: var(--text);
       text-transform: uppercase;
       letter-spacing: 2px;
       text-align: center;
     }
-    .d-team-name.has-ball { color: #e94560; }
+    .d-team-name.has-ball { color: var(--accent); }
 
     .d-team-score {
       font-size: 100px;
       font-weight: 700;
-      color: #fff;
+      color: var(--text-bright);
       font-family: 'Orbitron', monospace;
       line-height: 1;
     }
 
     .d-timeouts { display: flex; gap: 8px; }
     .d-timeout-dot {
-      width: 12px; height: 12px; border-radius: 50%; background: #e94560;
+      width: 12px; height: 12px; border-radius: 50%; background: var(--accent);
     }
-    .d-timeout-dot.used { background: #333; }
+    .d-timeout-dot.used { background: var(--border-dark); }
 
     .d-divider {
       display: flex;
@@ -163,8 +240,8 @@
       gap: 8px;
     }
 
-    .d-possession-arrow { font-size: 28px; color: #e94560; font-weight: 700; }
-    .d-possession-label { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 1px; }
+    .d-possession-arrow { font-size: 28px; color: var(--accent); font-weight: 700; }
+    .d-possession-label { font-size: 11px; color: var(--text-dimmer); text-transform: uppercase; letter-spacing: 1px; }
 
     .d-clock-wrap {
       display: flex;
@@ -180,20 +257,20 @@
     .d-clock-value {
       font-size: 56px;
       font-weight: 700;
-      color: #fff;
+      color: var(--text-bright);
       font-family: 'Orbitron', monospace;
       line-height: 1;
     }
     .d-clock-label {
       font-size: 11px;
-      color: #555;
+      color: var(--text-dimmer);
       text-transform: uppercase;
       letter-spacing: 2px;
     }
 
     .d-nrz-badge {
-      background: #e94560;
-      color: #fff;
+      background: var(--accent);
+      color: var(--text-bright);
       padding: 6px 20px;
       border-radius: 6px;
       font-size: 14px;
@@ -213,48 +290,48 @@
     .d-box-table th {
       font-size: 13px;
       font-weight: 700;
-      color: #555;
+      color: var(--text-dimmer);
       text-transform: uppercase;
       letter-spacing: 1px;
       padding: 6px 12px;
       text-align: center;
-      border-bottom: 1px solid #333;
+      border-bottom: 1px solid var(--border-dark);
     }
     .d-box-table th.team-col { text-align: left; min-width: 120px; }
     .d-box-table td {
       font-size: 28px;
       font-weight: 700;
-      color: #888;
+      color: var(--text-dim);
       text-align: center;
       padding: 10px 12px;
     }
     .d-box-table td.team-col {
       font-size: 24px;
       font-weight: 700;
-      color: #e0e0e0;
+      color: var(--text);
       text-align: left;
       text-transform: uppercase;
       letter-spacing: 1px;
     }
-    .d-box-table td.team-col.has-ball { color: #e94560; }
+    .d-box-table td.team-col.has-ball { color: var(--accent); }
     .d-box-table td.total-col {
       font-size: 52px;
-      color: #fff;
+      color: var(--text-bright);
       padding: 10px 20px;
-      border-left: 1px solid #333;
+      border-left: 1px solid var(--border-dark);
     }
-    .d-box-table td.active-col { color: #4fc3f7; }
-    .d-box-table td.empty-col  { color: #333; }
+    .d-box-table td.active-col { color: var(--highlight); }
+    .d-box-table td.empty-col  { color: var(--border-dark); }
 
     .d-possession-row {
       display: flex;
       align-items: center;
       gap: 8px;
       font-size: 13px;
-      color: #888;
+      color: var(--text-dim);
     }
-    .d-poss-arrow { font-size: 20px; color: #e94560; font-weight: 700; }
-    .d-to-row { display: flex; gap: 32px; align-items: center; font-size: 12px; color: #555; }
+    .d-poss-arrow { font-size: 20px; color: var(--accent); font-weight: 700; }
+    .d-to-row { display: flex; gap: 32px; align-items: center; font-size: 12px; color: var(--text-dimmer); }
     .d-to-team { display: flex; align-items: center; gap: 8px; }
 
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -276,11 +353,11 @@
     .ctrl-header {
       font-size: 11px;
       font-weight: 700;
-      color: #555;
+      color: var(--text-dimmer);
       text-transform: uppercase;
       letter-spacing: 1px;
       padding-bottom: 6px;
-      border-bottom: 1px solid #333;
+      border-bottom: 1px solid var(--border-dark);
       margin-bottom: 10px;
     }
 
@@ -295,14 +372,14 @@
     .ctrl-team-label {
       font-size: 13px;
       font-weight: 700;
-      color: #4fc3f7;
+      color: var(--highlight);
       min-width: 90px;
     }
 
     .ctrl-score-display {
       font-size: 20px;
       font-weight: 700;
-      color: #fff;
+      color: var(--text-bright);
       font-family: monospace;
       min-width: 36px;
     }
@@ -314,17 +391,17 @@
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
-      border: 1px solid #333;
+      border: 1px solid var(--border-dark);
       background: transparent;
-      color: #888;
+      color: var(--text-dim);
       transition: all 0.15s;
       white-space: nowrap;
     }
-    .btn:hover { border-color: #e94560; color: #e94560; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
     .btn:active { opacity: 0.7; }
 
     .btn-primary {
-      background: #e94560;
+      background: var(--accent);
       color: white;
       border: none;
       padding: 6px 14px;
@@ -334,35 +411,35 @@
       cursor: pointer;
       transition: background 0.15s;
     }
-    .btn-primary:hover { background: #c0392b; }
+    .btn-primary:hover { background: var(--accent-dark); }
 
     .btn-score {
       padding: 8px 12px;
       font-size: 12px;
       font-weight: 700;
       border-radius: 6px;
-      border: 1px solid #333;
+      border: 1px solid var(--border-dark);
       background: transparent;
-      color: #e0e0e0;
+      color: var(--text);
       cursor: pointer;
       transition: all 0.15s;
     }
     .btn-score:hover { border-color: #2ecc71; color: #2ecc71; }
-    .btn-score.negative:hover { border-color: #e94560; color: #e94560; }
+    .btn-score.negative:hover { border-color: var(--accent); color: var(--accent); }
 
     .btn-state {
       padding: 6px 14px;
       border-radius: 6px;
-      border: 1px solid #333;
+      border: 1px solid var(--border-dark);
       background: transparent;
-      color: #888;
+      color: var(--text-dim);
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.15s;
     }
-    .btn-state:hover { border-color: #555; color: #e0e0e0; }
-    .btn-state.active { background: #e94560; color: #fff; border-color: #e94560; }
+    .btn-state:hover { border-color: var(--text-dimmer); color: var(--text); }
+    .btn-state.active { background: var(--accent); color: var(--text-bright); border-color: var(--accent); }
 
     .btn-nrz {
       padding: 8px 20px;
@@ -370,18 +447,18 @@
       font-size: 13px;
       font-weight: 700;
       cursor: pointer;
-      border: 1px solid #333;
+      border: 1px solid var(--border-dark);
       background: transparent;
-      color: #888;
+      color: var(--text-dim);
       letter-spacing: 1px;
       transition: all 0.15s;
     }
-    .btn-nrz.active { background: #e94560; color: #fff; border-color: #e94560; }
+    .btn-nrz.active { background: var(--accent); color: var(--text-bright); border-color: var(--accent); }
 
     .ctrl-clock-display {
       font-size: 48px;
       font-weight: 700;
-      color: #fff;
+      color: var(--text-bright);
       font-family: 'Orbitron', monospace;
       line-height: 1;
       margin-bottom: 10px;
@@ -393,9 +470,9 @@
       width: 10px;
       height: 10px;
       border-radius: 50%;
-      background: #e94560;
+      background: var(--accent);
     }
-    .ctrl-dot.used { background: #333; }
+    .ctrl-dot.used { background: var(--border-dark); }
 
     /* ════════════════════════════════════════════════════════
        FULLSCREEN CLOCK VIEWS (game clock + play clock)
@@ -404,29 +481,29 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: #111;
+      background: var(--input-bg);
       gap: 24px;
     }
 
     .clock-big {
       font-size: 180px;
       font-weight: 700;
-      color: #fff;
+      color: var(--text-bright);
       font-family: 'Orbitron', monospace;
       line-height: 1;
     }
-    .clock-big.expired { color: #e94560; }
+    .clock-big.expired { color: var(--accent); }
 
     .clock-teams {
       font-size: 18px;
-      color: #888;
+      color: var(--text-dim);
       font-family: monospace;
       letter-spacing: 2px;
     }
 
     .clock-label {
       font-size: 16px;
-      color: #555;
+      color: var(--text-dimmer);
       text-transform: uppercase;
       letter-spacing: 3px;
     }
@@ -444,6 +521,7 @@
       <button class="tab-btn" id="tab-gameclock" onclick="switchView('gameclock')">Game Clock</button>
       <button class="tab-btn" id="tab-playclock" onclick="switchView('playclock')">Play Clock</button>
     </nav>
+    <button onclick="cycleTheme()" class="theme-btn" title="Switch theme">◑</button>
     <span id="conn-status" class="conn-status connected"><span class="conn-dot"></span>Connected</span>
   </header>
 
@@ -700,6 +778,20 @@
     let view = params.get('view') || 'display';
     let state = null;
     let failCount = 0;
+
+    // ── Theme ────────────────────────────────────────────
+    const THEMES = ['default', 'stadium', 'field'];
+    function cycleTheme() {
+      const cur = document.documentElement.getAttribute('data-theme') || 'default';
+      const next = THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length];
+      applyTheme(next);
+    }
+    function applyTheme(t) {
+      if (t === 'default') document.documentElement.removeAttribute('data-theme');
+      else document.documentElement.setAttribute('data-theme', t);
+      localStorage.setItem('mbTheme', t);
+    }
+    (function() { const s = localStorage.getItem('mbTheme'); if (s) applyTheme(s); })();
 
     if (!gameId) { window.location.href = '/'; }
 

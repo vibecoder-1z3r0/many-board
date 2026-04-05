@@ -7,12 +7,57 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg:          #1a1a2e;
+      --panel:       #16213e;
+      --border:      #0f3460;
+      --border-mid:  #2a2a3e;
+      --border-dark: #333;
+      --input-bg:    #111;
+      --accent:      #e94560;
+      --accent-dark: #c0392b;
+      --text:        #e0e0e0;
+      --text-dim:    #888;
+      --text-dimmer: #555;
+      --text-bright: #fff;
+      --highlight:   #4fc3f7;
+    }
+    [data-theme="stadium"] {
+      --bg:          #000000;
+      --panel:       #0d0d0d;
+      --border:      #2a2a2a;
+      --border-mid:  #1f1f1f;
+      --border-dark: #1a1a1a;
+      --input-bg:    #111111;
+      --accent:      #00e5ff;
+      --accent-dark: #00b8cc;
+      --text:        #ffffff;
+      --text-dim:    #aaaaaa;
+      --text-dimmer: #666666;
+      --text-bright: #ffffff;
+      --highlight:   #ffeb3b;
+    }
+    [data-theme="field"] {
+      --bg:          #0a1a0a;
+      --panel:       #0f200f;
+      --border:      #1e4d1e;
+      --border-mid:  #162816;
+      --border-dark: #1e3a1e;
+      --input-bg:    #071207;
+      --accent:      #f5a623;
+      --accent-dark: #d4891a;
+      --text:        #e8f0e8;
+      --text-dim:    #7a9e7a;
+      --text-dimmer: #4a6a4a;
+      --text-bright: #ffffff;
+      --highlight:   #7dff8a;
+    }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #1a1a2e;
-      color: #e0e0e0;
+      background: var(--bg);
+      color: var(--text);
       height: 100vh;
       display: flex;
       flex-direction: column;
@@ -21,8 +66,8 @@
 
     /* ── Header ─────────────────────────────────────────── */
     header {
-      background: #16213e;
-      border-bottom: 1px solid #0f3460;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
       padding: 0 16px;
       height: 48px;
       display: flex;
@@ -30,8 +75,8 @@
       gap: 12px;
       flex-shrink: 0;
     }
-    .brand { font-size: 18px; font-weight: 700; color: #e94560; text-decoration: none; }
-    .header-score { font-size: 13px; color: #888; font-family: monospace; }
+    .brand { font-size: 18px; font-weight: 700; color: var(--accent); text-decoration: none; }
+    .header-score { font-size: 13px; color: var(--text-dim); font-family: monospace; }
     .conn-status {
       margin-left: auto;
       font-size: 11px;
@@ -45,18 +90,33 @@
     .conn-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
     .conn-status.connected { color: #2ecc71; }
     .conn-status.connected .conn-dot { background: #2ecc71; }
-    .conn-status.lost { color: #e94560; }
-    .conn-status.lost .conn-dot { background: #e94560; }
+    .conn-status.lost { color: var(--accent); }
+    .conn-status.lost .conn-dot { background: var(--accent); }
+
+    .theme-btn {
+      background: transparent;
+      border: 1px solid var(--border-dark);
+      color: var(--text-dim);
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; padding: 0;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .theme-btn:hover { color: var(--text); border-color: var(--text-dim); }
+
     .view-tabs { display: flex; }
     .tab-btn {
-      padding: 12px 18px; font-size: 13px; font-weight: 600; color: #888;
+      padding: 12px 18px; font-size: 13px; font-weight: 600; color: var(--text-dim);
       border-bottom: 2px solid transparent; background: transparent;
       border-top: none; border-left: none; border-right: none;
       cursor: pointer; text-decoration: none; display: flex; align-items: center;
       transition: color 0.15s;
     }
-    .tab-btn:hover { color: #e0e0e0; }
-    .tab-btn.active { color: #e94560; border-bottom-color: #e94560; }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
 
     /* ── Views ───────────────────────────────────────────── */
     .view { display: none; flex: 1; overflow: hidden; }
@@ -71,7 +131,7 @@
       justify-content: center;
       gap: 28px;
       padding: 24px;
-      background: #1a1a2e;
+      background: var(--bg);
     }
 
     /* Box score table */
@@ -84,42 +144,42 @@
     .bs-table th, .bs-table td {
       padding: 10px 14px;
       text-align: center;
-      border-bottom: 1px solid #333;
+      border-bottom: 1px solid var(--border-dark);
     }
     .bs-table th {
       font-size: 13px;
-      color: #555;
+      color: var(--text-dimmer);
       font-weight: 700;
-      border-bottom: 1px solid #0f3460;
+      border-bottom: 1px solid var(--border);
     }
     .bs-team-name {
       font-size: 16px;
       font-weight: 700;
-      color: #e0e0e0;
+      color: var(--text);
       text-align: left !important;
       min-width: 100px;
       white-space: nowrap;
     }
-    .bs-inning-score { color: #e0e0e0; min-width: 32px; }
-    .bs-inning-score.current { color: #4fc3f7; font-weight: 700; }
-    .bs-inning-score.empty { color: #333; }
+    .bs-inning-score { color: var(--text); min-width: 32px; }
+    .bs-inning-score.current { color: var(--highlight); font-weight: 700; }
+    .bs-inning-score.empty { color: var(--border-dark); }
     .bs-total {
       font-size: 22px;
       font-weight: 700;
-      color: #fff;
+      color: var(--text-bright);
       font-family: 'Orbitron', monospace;
-      border-left: 1px solid #0f3460 !important;
+      border-left: 1px solid var(--border) !important;
     }
-    .bs-divider { border-left: 1px solid #0f3460; }
+    .bs-divider { border-left: 1px solid var(--border); }
 
     /* Status row */
     .bs-status {
       font-size: 20px;
       font-weight: 700;
-      color: #4fc3f7;
+      color: var(--highlight);
       letter-spacing: 1px;
     }
-    .bs-status-sub { font-size: 14px; color: #888; margin-top: 4px; }
+    .bs-status-sub { font-size: 14px; color: var(--text-dim); margin-top: 4px; }
 
     /* ── BSO display ─────────────────────────────────────── */
     .bso-wrap {
@@ -136,19 +196,19 @@
     .bso-label {
       font-size: 11px;
       font-weight: 700;
-      color: #555;
+      color: var(--text-dimmer);
       text-transform: uppercase;
       letter-spacing: 2px;
     }
     .bso-dots { display: flex; gap: 6px; }
     .bso-dot {
       width: 14px; height: 14px; border-radius: 50%;
-      background: #222; border: 2px solid #333;
+      background: #222; border: 2px solid var(--border-dark);
       transition: background 0.15s, border-color 0.15s;
     }
     .bso-dot.ball-on   { background: #3498db; border-color: #3498db; }
     .bso-dot.strike-on { background: #f39c12; border-color: #f39c12; }
-    .bso-dot.out-on    { background: #e94560; border-color: #e94560; }
+    .bso-dot.out-on    { background: var(--accent); border-color: var(--accent); }
     .bso-number {
       font-size: 28px;
       font-weight: 700;
@@ -157,7 +217,7 @@
     }
     .bso-number.ball-val   { color: #3498db; }
     .bso-number.strike-val { color: #f39c12; }
-    .bso-number.out-val    { color: #e94560; }
+    .bso-number.out-val    { color: var(--accent); }
 
     /* ── Diamond ─────────────────────────────────────────── */
     .diamond-wrap {
@@ -168,7 +228,7 @@
     }
     .diamond-label {
       font-size: 11px;
-      color: #555;
+      color: var(--text-dimmer);
       text-transform: uppercase;
       letter-spacing: 2px;
     }
@@ -180,8 +240,8 @@
     }
     .base {
       width: 40px; height: 40px;
-      background: #111;
-      border: 2px solid #333;
+      background: var(--input-bg);
+      border: 2px solid var(--border-dark);
       border-radius: 4px;
       transform: rotate(45deg);
       transition: background 0.15s, border-color 0.15s;
@@ -207,8 +267,8 @@
 
     .ctrl-section { margin-bottom: 16px; }
     .ctrl-header {
-      font-size: 11px; font-weight: 700; color: #555; text-transform: uppercase;
-      letter-spacing: 1px; padding-bottom: 6px; border-bottom: 1px solid #333;
+      font-size: 11px; font-weight: 700; color: var(--text-dimmer); text-transform: uppercase;
+      letter-spacing: 1px; padding-bottom: 6px; border-bottom: 1px solid var(--border-dark);
       margin-bottom: 10px;
     }
     .ctrl-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 6px; }
@@ -226,7 +286,7 @@
       align-items: center;
       gap: 6px;
     }
-    .ump-bso-label { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 1px; }
+    .ump-bso-label { font-size: 11px; color: var(--text-dimmer); text-transform: uppercase; letter-spacing: 1px; }
     .ump-bso-val {
       font-size: 40px;
       font-weight: 700;
@@ -236,17 +296,17 @@
     .ump-bso-dots { display: flex; gap: 5px; }
     .ump-bso-dot {
       width: 12px; height: 12px; border-radius: 50%;
-      background: #222; border: 2px solid #333;
+      background: #222; border: 2px solid var(--border-dark);
     }
     .ump-bso-dot.on { }
 
     /* Buttons */
     .btn {
       padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;
-      cursor: pointer; border: 1px solid #333; background: transparent; color: #888;
+      cursor: pointer; border: 1px solid var(--border-dark); background: transparent; color: var(--text-dim);
       transition: all 0.15s; white-space: nowrap;
     }
-    .btn:hover { border-color: #e94560; color: #e94560; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
     .btn:active { opacity: 0.7; }
 
     .btn-big {
@@ -257,48 +317,48 @@
     .btn-big:active { opacity: 0.7; transform: scale(0.97); }
 
     .btn-ball   { background: #1a2a3e; color: #3498db; border-color: #3498db; }
-    .btn-ball:hover   { background: #3498db; color: #fff; }
+    .btn-ball:hover   { background: #3498db; color: var(--text-bright); }
     .btn-strike { background: #2e1a0e; color: #f39c12; border-color: #f39c12; }
-    .btn-strike:hover { background: #f39c12; color: #111; }
+    .btn-strike:hover { background: #f39c12; color: var(--input-bg); }
     .btn-foul   { background: #2a1a0e; color: #e67e22; border-color: #e67e22; }
-    .btn-foul:hover   { background: #e67e22; color: #111; }
-    .btn-out    { background: #2e0e0e; color: #e94560; border-color: #e94560; }
-    .btn-out:hover    { background: #e94560; color: #fff; }
+    .btn-foul:hover   { background: #e67e22; color: var(--input-bg); }
+    .btn-out    { background: #2e0e0e; color: var(--accent); border-color: var(--accent); }
+    .btn-out:hover    { background: var(--accent); color: var(--text-bright); }
     .btn-run    { background: #0e2e0e; color: #2ecc71; border-color: #2ecc71; }
-    .btn-run:hover    { background: #2ecc71; color: #111; }
+    .btn-run:hover    { background: #2ecc71; color: var(--input-bg); }
 
     .btn-primary {
-      background: #e94560; color: white; border: none; padding: 8px 18px;
+      background: var(--accent); color: white; border: none; padding: 8px 18px;
       border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
       transition: background 0.15s;
     }
-    .btn-primary:hover { background: #c0392b; }
+    .btn-primary:hover { background: var(--accent-dark); }
 
     /* Diamond in ump view (tappable) */
     .ump-diamond { display: grid; grid-template-columns: repeat(3, 44px); grid-template-rows: repeat(3, 44px); gap: 4px; }
     .ump-base {
-      width: 44px; height: 44px; background: #111; border: 2px solid #333;
+      width: 44px; height: 44px; background: var(--input-bg); border: 2px solid var(--border-dark);
       border-radius: 4px; transform: rotate(45deg); cursor: pointer;
       transition: background 0.15s, border-color 0.15s;
     }
     .ump-base.occupied { background: #f39c12; border-color: #f39c12; }
     .ump-base.home-plate { border-radius: 50%; background: #222; border-color: #444; cursor: default; }
-    .ump-base:hover:not(.home-plate) { border-color: #888; }
+    .ump-base:hover:not(.home-plate) { border-color: var(--text-dim); }
 
     /* Inning score inline edit */
     .inning-edit-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     .inning-edit-input {
-      background: #111; color: #e0e0e0; border: 1px solid #333; padding: 6px 8px;
+      background: var(--input-bg); color: var(--text); border: 1px solid var(--border-dark); padding: 6px 8px;
       border-radius: 6px; font-size: 13px; outline: none; width: 60px; text-align: center;
     }
-    .inning-edit-input:focus { border-color: #e94560; }
+    .inning-edit-input:focus { border-color: var(--accent); }
 
     /* Team name editing */
     .team-name-input {
-      background: #111; color: #e0e0e0; border: 1px solid #333; padding: 5px 8px;
+      background: var(--input-bg); color: var(--text); border: 1px solid var(--border-dark); padding: 5px 8px;
       border-radius: 6px; font-size: 13px; outline: none; max-width: 120px;
     }
-    .team-name-input:focus { border-color: #e94560; }
+    .team-name-input:focus { border-color: var(--accent); }
 
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
   </style>
@@ -312,6 +372,7 @@
       <button class="tab-btn" id="tab-boxscore" onclick="switchView('boxscore')">Box Score</button>
       <button class="tab-btn" id="tab-ump"      onclick="switchView('ump')">Ump</button>
     </nav>
+    <button onclick="cycleTheme()" class="theme-btn" title="Switch theme">◑</button>
     <span id="conn-status" class="conn-status connected"><span class="conn-dot"></span>Connected</span>
   </header>
 
@@ -488,6 +549,20 @@
     const gameId = params.get('game');
     let view  = params.get('view') || 'boxscore';
     let state = null;
+
+    // ── Theme ────────────────────────────────────────────
+    const THEMES = ['default', 'stadium', 'field'];
+    function cycleTheme() {
+      const cur = document.documentElement.getAttribute('data-theme') || 'default';
+      const next = THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length];
+      applyTheme(next);
+    }
+    function applyTheme(t) {
+      if (t === 'default') document.documentElement.removeAttribute('data-theme');
+      else document.documentElement.setAttribute('data-theme', t);
+      localStorage.setItem('mbTheme', t);
+    }
+    (function() { const s = localStorage.getItem('mbTheme'); if (s) applyTheme(s); })();
 
     if (!gameId) { window.location.href = '/'; }
 
