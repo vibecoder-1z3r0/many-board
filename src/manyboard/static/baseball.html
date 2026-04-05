@@ -462,9 +462,10 @@
     <!-- Scoring -->
     <div class="ctrl-section">
       <div class="ctrl-header">Scoring</div>
-      <div class="ctrl-row">
+      <div class="ctrl-row" style="align-items:center; gap:12px;">
         <button class="btn-big btn-run" id="ump-run-btn" onclick="api('run')">+1 Run</button>
         <button class="btn"             onclick="api('run', {delta: -1})">−1 Run</button>
+        <span id="ump-score-display" style="font-family:'Orbitron',monospace; font-size:20px; color:var(--text-bright); margin-left:8px;"></span>
       </div>
     </div>
 
@@ -727,6 +728,7 @@
       document.getElementById('ump-base-3rd').classList.toggle('occupied', s.base_third);
       const battingTeam = s.half === 'top' ? s.away_team : s.home_team;
       setText('ump-run-btn', `+1 Run (${battingTeam})`);
+      setText('ump-score-display', `A: ${s.away_total}  H: ${s.home_total}`);
     }
 
     function renderControl() {
