@@ -129,8 +129,8 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 28px;
-      padding: 24px;
+      gap: clamp(16px, 3vh, 32px);
+      padding: clamp(12px, 3vh, 28px) clamp(8px, 2vw, 24px);
       background: var(--bg);
     }
 
@@ -139,32 +139,32 @@
     .bs-table {
       border-collapse: collapse;
       font-family: monospace;
-      font-size: 18px;
+      font-size: clamp(14px, 2.5vw, 22px);
     }
     .bs-table th, .bs-table td {
-      padding: 10px 14px;
+      padding: clamp(6px, 1.5vw, 12px) clamp(8px, 2vw, 16px);
       text-align: center;
       border-bottom: 1px solid var(--border-dark);
     }
     .bs-table th {
-      font-size: 13px;
+      font-size: clamp(11px, 1.5vw, 14px);
       color: var(--text-dimmer);
       font-weight: 700;
       border-bottom: 1px solid var(--border);
     }
     .bs-team-name {
-      font-size: 16px;
+      font-size: clamp(14px, 2.5vw, 20px);
       font-weight: 700;
       color: var(--text);
       text-align: left !important;
-      min-width: 100px;
+      min-width: clamp(70px, 12vw, 120px);
       white-space: nowrap;
     }
-    .bs-inning-score { color: var(--text); min-width: 32px; }
+    .bs-inning-score { color: var(--text); min-width: clamp(20px, 3vw, 36px); }
     .bs-inning-score.current { color: var(--highlight); font-weight: 700; }
     .bs-inning-score.empty { color: var(--border-dark); }
     .bs-total {
-      font-size: 22px;
+      font-size: clamp(18px, 3.5vw, 28px);
       font-weight: 700;
       color: var(--text-bright);
       font-family: 'Orbitron', monospace;
@@ -174,12 +174,12 @@
 
     /* Status row */
     .bs-status {
-      font-size: 20px;
+      font-size: clamp(16px, 3vw, 24px);
       font-weight: 700;
       color: var(--highlight);
       letter-spacing: 1px;
     }
-    .bs-status-sub { font-size: 14px; color: var(--text-dim); margin-top: 4px; }
+    .bs-status-sub { font-size: clamp(12px, 1.8vw, 16px); color: var(--text-dim); margin-top: 4px; }
 
     /* ── BSO display ─────────────────────────────────────── */
     .bso-wrap {
@@ -210,7 +210,7 @@
     .bso-dot.strike-on { background: #f39c12; border-color: #f39c12; }
     .bso-dot.out-on    { background: var(--accent); border-color: var(--accent); }
     .bso-number {
-      font-size: 28px;
+      font-size: clamp(20px, 4vw, 32px);
       font-weight: 700;
       font-family: monospace;
       line-height: 1;
@@ -371,6 +371,7 @@
     <nav class="view-tabs">
       <button class="tab-btn" id="tab-boxscore" onclick="switchView('boxscore')">Box Score</button>
       <button class="tab-btn" id="tab-ump"      onclick="switchView('ump')">Ump</button>
+      <button class="tab-btn" id="tab-control"  onclick="switchView('control')">Control</button>
     </nav>
     <select id="theme-select" class="theme-select" onchange="applyTheme(this.value)" title="Switch theme">
       <option value="default">Default</option>
@@ -434,7 +435,7 @@
 
   </div>
 
-  <!-- ── UMP CONTROL VIEW ──────────────────────────────── -->
+  <!-- ── UMP VIEW (field actions) ─────────────────────── -->
   <div class="view" id="view-ump">
 
     <!-- Live BSO count -->
@@ -445,17 +446,25 @@
 
     <!-- Main ump buttons -->
     <div class="ctrl-section">
-      <div class="ctrl-header">Actions</div>
+      <div class="ctrl-header">Pitch / Play</div>
       <div class="ctrl-row">
         <button class="btn-big btn-ball"   onclick="api('ball')">Ball</button>
         <button class="btn-big btn-strike" onclick="api('strike')">Strike</button>
         <button class="btn-big btn-foul"   onclick="api('foul')">Foul</button>
         <button class="btn-big btn-out"    onclick="api('out')">Out</button>
-        <button class="btn-big btn-run"    onclick="api('run')">+1 Run</button>
       </div>
       <div class="ctrl-row" style="margin-top:4px;">
         <button class="btn" onclick="api('count/reset')">Reset Count</button>
-        <button class="btn" onclick="api('change-sides')" style="border-color:#e94560;color:#e94560;">Change Sides</button>
+        <button class="btn" onclick="api('change-sides')" style="border-color:var(--accent);color:var(--accent);">Change Sides</button>
+      </div>
+    </div>
+
+    <!-- Scoring -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">Scoring</div>
+      <div class="ctrl-row">
+        <button class="btn-big btn-run" id="ump-run-btn" onclick="api('run')">+1 Run</button>
+        <button class="btn"             onclick="api('run', {delta: -1})">−1 Run</button>
       </div>
     </div>
 
@@ -478,31 +487,36 @@
       </div>
     </div>
 
-    <!-- Scoring correction -->
+  </div>
+
+  <!-- ── CONTROL VIEW (scorekeeper) ────────────────────── -->
+  <div class="view" id="view-control">
+
+    <!-- Score correction -->
     <div class="ctrl-section">
       <div class="ctrl-header">Score Correction</div>
       <div class="ctrl-row inning-edit-row">
-        <span style="font-size:12px;color:#888;">Inning</span>
+        <span style="font-size:12px;color:var(--text-dim);">Inning</span>
         <input class="inning-edit-input" id="edit-inning" type="number" min="1" value="1">
-        <span style="font-size:12px;color:#888;">Half</span>
-        <select id="edit-half" style="background:#111;color:#e0e0e0;border:1px solid #333;padding:5px 8px;border-radius:6px;font-size:13px;outline:none;">
+        <span style="font-size:12px;color:var(--text-dim);">Half</span>
+        <select id="edit-half" class="inning-edit-input" style="width:auto">
           <option value="top">Top (Away)</option>
           <option value="bottom">Bottom (Home)</option>
         </select>
-        <span style="font-size:12px;color:#888;">Runs</span>
+        <span style="font-size:12px;color:var(--text-dim);">Runs</span>
         <input class="inning-edit-input" id="edit-runs" type="number" value="0">
         <button class="btn-primary" onclick="setInningScore()">Set</button>
         <button class="btn" onclick="setInningDash()" title="Set to dash (–)">–</button>
       </div>
     </div>
 
-    <!-- Inning nav -->
+    <!-- Inning navigation -->
     <div class="ctrl-section">
       <div class="ctrl-header">Navigate</div>
       <div class="ctrl-row">
-        <span style="font-size:12px;color:#888;">Jump to</span>
+        <span style="font-size:12px;color:var(--text-dim);">Jump to</span>
         <input class="inning-edit-input" id="nav-inning" type="number" min="1" value="1" style="width:52px;">
-        <select id="nav-half" style="background:#111;color:#e0e0e0;border:1px solid #333;padding:5px 8px;border-radius:6px;font-size:13px;outline:none;">
+        <select id="nav-half" class="inning-edit-input" style="width:auto">
           <option value="top">Top</option>
           <option value="bottom">Bottom</option>
         </select>
@@ -510,13 +524,13 @@
       </div>
       <div class="ctrl-row" style="margin-top:4px;">
         <button class="btn" onclick="api('inning/add')">+ Inning</button>
-        <button class="btn" onclick="api('inning/remove')" style="color:#e94560;border-color:#e94560;">− Inning</button>
+        <button class="btn" onclick="api('inning/remove')" style="color:var(--accent);border-color:var(--accent);">− Inning</button>
       </div>
     </div>
 
-    <!-- BSO style -->
+    <!-- BSO display style -->
     <div class="ctrl-section">
-      <div class="ctrl-header">Display Style</div>
+      <div class="ctrl-header">BSO Display Style</div>
       <div class="ctrl-row">
         <button class="btn" id="style-dots"    onclick="setBsoStyle('dots')">Dots</button>
         <button class="btn" id="style-numbers" onclick="setBsoStyle('numbers')">Numbers</button>
@@ -528,20 +542,20 @@
     <div class="ctrl-section">
       <div class="ctrl-header">Team Names</div>
       <div class="ctrl-row">
-        <span style="font-size:12px;color:#888;">Away</span>
+        <span style="font-size:12px;color:var(--text-dim);">Away</span>
         <input class="team-name-input" id="edit-away" type="text" maxlength="20" placeholder="Away">
-        <span style="font-size:12px;color:#888;">Home</span>
+        <span style="font-size:12px;color:var(--text-dim);">Home</span>
         <input class="team-name-input" id="edit-home" type="text" maxlength="20" placeholder="Home">
         <button class="btn-primary" onclick="saveTeamNames()">Save</button>
       </div>
     </div>
 
-    <!-- Status -->
+    <!-- Game status -->
     <div class="ctrl-section">
       <div class="ctrl-header">Game Status</div>
       <div class="ctrl-row">
         <button class="btn" id="status-active" onclick="setStatus('active')">Active</button>
-        <button class="btn" id="status-final" onclick="setStatus('final')" style="color:#e94560;border-color:#e94560;">Final</button>
+        <button class="btn" id="status-final"  onclick="setStatus('final')" style="color:var(--accent);border-color:var(--accent);">Final</button>
       </div>
     </div>
 
@@ -609,8 +623,9 @@
     function render() {
       if (!state) return;
       renderHeader();
-      if (view === 'boxscore') renderBoxscore();
-      else if (view === 'ump') renderUmp();
+      if (view === 'boxscore')  renderBoxscore();
+      else if (view === 'ump')  renderUmp();
+      else if (view === 'control') renderControl();
     }
 
     function renderHeader() {
@@ -706,35 +721,28 @@
     // ── Ump view ──────────────────────────────────────────
     function renderUmp() {
       const s = state;
-
-      // BSO display
       renderBSOUmp(s);
-
-      // Bases
       document.getElementById('ump-base-1st').classList.toggle('occupied', s.base_first);
       document.getElementById('ump-base-2nd').classList.toggle('occupied', s.base_second);
       document.getElementById('ump-base-3rd').classList.toggle('occupied', s.base_third);
+      const battingTeam = s.half === 'top' ? s.away_team : s.home_team;
+      setText('ump-run-btn', `+1 Run (${battingTeam})`);
+    }
 
-      // BSO style buttons
+    function renderControl() {
+      const s = state;
       ['dots', 'numbers', 'both'].forEach(sty => {
         const btn = document.getElementById('style-' + sty);
-        if (btn) {
-          btn.style.borderColor = s.bso_style === sty ? '#e94560' : '';
-          btn.style.color = s.bso_style === sty ? '#e94560' : '';
-        }
+        if (btn) { btn.style.borderColor = s.bso_style === sty ? 'var(--accent)' : ''; btn.style.color = s.bso_style === sty ? 'var(--accent)' : ''; }
       });
-
-      // Team name inputs (only if not focused)
       const awayIn = document.getElementById('edit-away');
       const homeIn = document.getElementById('edit-home');
-      if (document.activeElement !== awayIn) awayIn.value = s.away_team;
-      if (document.activeElement !== homeIn) homeIn.value = s.home_team;
-
-      // Status buttons
-      document.getElementById('status-active').style.borderColor = s.status === 'active' ? '#2ecc71' : '';
-      document.getElementById('status-active').style.color = s.status === 'active' ? '#2ecc71' : '';
-      document.getElementById('status-final').style.borderColor = s.status === 'final' ? '#e94560' : '';
-      document.getElementById('status-final').style.color = s.status === 'final' ? '#e94560' : '';
+      if (awayIn && document.activeElement !== awayIn) awayIn.value = s.away_team;
+      if (homeIn && document.activeElement !== homeIn) homeIn.value = s.home_team;
+      const sa = document.getElementById('status-active');
+      const sf = document.getElementById('status-final');
+      if (sa) { sa.style.borderColor = s.status === 'active' ? '#2ecc71' : ''; sa.style.color = s.status === 'active' ? '#2ecc71' : ''; }
+      if (sf) { sf.style.borderColor = s.status === 'final' ? 'var(--accent)' : ''; sf.style.color = s.status === 'final' ? 'var(--accent)' : ''; }
     }
 
     function renderBSOUmp(s) {

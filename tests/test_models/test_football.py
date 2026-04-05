@@ -20,7 +20,7 @@ def test_football_game_defaults() -> None:
     assert game.possession == Possession.HOME
     assert game.home_timeouts == 3
     assert game.away_timeouts == 3
-    assert game.play_clock == 40
+    assert game.play_clock == 30
     assert game.play_clock_running is False
     assert game.no_run_zone is False
 
@@ -31,7 +31,7 @@ def test_football_game_create_schema() -> None:
     assert create.away_team == "Ravens"
     assert create.home_timeouts == 3
     assert create.away_timeouts == 3
-    assert create.play_clock == 40
+    assert create.play_clock == 30
 
 
 def test_football_game_create_custom_timeouts() -> None:

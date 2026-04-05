@@ -173,7 +173,7 @@ SECOND→OT snapshots 2H score; OT→FINAL snapshots OT score.
 | PATCH | `/{id}/foul` | Record foul (no-op at 2 strikes) |
 | PATCH | `/{id}/out` | Record out (resets count; 3rd ends half) |
 | PATCH | `/{id}/change-sides` | End current half immediately |
-| PATCH | `/{id}/run` | Add run to current team/inning |
+| PATCH | `/{id}/run` | Add/subtract run (`delta` body field, default +1) |
 | PATCH | `/{id}/inning-score` | Manually set inning score (int or null→"-") |
 | PATCH | `/{id}/bases` | Update base runners |
 | PATCH | `/{id}/inning/add` | Add an extra inning |
@@ -194,14 +194,41 @@ SECOND→OT snapshots 2H score; OT→FINAL snapshots OT score.
 - `poll()` tracks `failCount`; `setConnStatus(bool)` updates the header badge.
 - `switchView(v)` updates the URL search param `?view=v` so refreshes restore
   the current tab.
-- Theme is stored in `localStorage` under key `mbTheme`; `cycleTheme()` rotates
-  through `['default', 'stadium', 'field']`.
+- Theme is stored in `localStorage` under key `mbTheme`; a `<select>` in every
+  header calls `applyTheme(t)` which sets `data-theme` on `<html>` and syncs
+  the select. Three themes: `default` (navy/crimson), `stadium` (black/cyan),
+  `field` (dark green/gold).
 - Colors use CSS custom properties (`--bg`, `--panel`, `--accent`, etc.) defined
   in `:root` with overrides for `[data-theme="stadium"]` and
   `[data-theme="field"]`.
 - Orbitron (Google Fonts) is used for clock and score numbers.
 - Sport-semantic colors are hardcoded (not themed): ball blue `#3498db`, strike
   orange `#f39c12`, foul `#e67e22`, connected green `#2ecc71`.
+- Display views use `clamp(min, preferred, max)` for font sizes and spacing so
+  they scale naturally from phones to tablets without media queries.
+
+### View conventions per sport
+
+Each sport has **display views** (read-only, meant to be shown on a screen at
+the field) and **operator views** (interactive, used by people running the
+game).
+
+**Football (`football.html`)**
+| Tab | Purpose |
+|-----|---------|
+| Display | Big-score TV scoreboard with clocks, possession, NRZ, PAT |
+| Box Score | Half-by-half table with live active-half score, clocks |
+| Game Clock | Fullscreen Orbitron game clock |
+| Play Clock | Fullscreen Orbitron play clock |
+| Control | Scorekeeper: scoring, PAT, down/distance, timeouts, half, clocks with set/reset, half-score correction, OT, team names |
+| Ref | Field referee: dual clock cards (start/stop), downs, possession, PAT |
+
+**Baseball (`baseball.html`)**
+| Tab | Purpose |
+|-----|---------|
+| Box Score | Inning-by-inning table, BSO indicators, base diamond |
+| Ump | Field ump: pitch calls (B/S/F/Out), score +1/−1, bases, change sides |
+| Control | Scorekeeper: score correction, inning nav (add/remove/jump), BSO display style, team names, game status |
 
 ---
 

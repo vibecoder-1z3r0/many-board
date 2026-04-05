@@ -58,6 +58,10 @@ class StatusUpdate(BaseModel):
     status: str
 
 
+class RunUpdate(BaseModel):
+    delta: int = 1
+
+
 # --- Helpers ---
 
 
@@ -267,13 +271,15 @@ def reset_count(game_id: str, session: SessionDep) -> BaseballGameRead:
 
 
 @router.patch("/{game_id}/run")
-def record_run(game_id: str, session: SessionDep) -> BaseballGameRead:
+def record_run(
+    game_id: str, session: SessionDep, update: RunUpdate = RunUpdate()
+) -> BaseballGameRead:
     game = _get_game(game_id, session)
     scores = _get_scores(game)
     team = _current_team(game)
     idx = _inning_idx(game)
     if 0 <= idx < len(scores[team]):
-        scores[team][idx] = _cell_runs(scores[team][idx]) + 1
+        scores[team][idx] = max(0, _cell_runs(scores[team][idx]) + update.delta)
     _set_scores(game, scores)
     return _to_read(_save(game, session))
 
