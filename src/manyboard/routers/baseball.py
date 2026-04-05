@@ -49,7 +49,7 @@ class InningNavUpdate(BaseModel):
 class InningScoreUpdate(BaseModel):
     inning: Annotated[int, Field(ge=1)]
     half: InningHalf
-    runs: Annotated[int, Field(ge=0)]
+    runs: int  # negative allowed for score correction
 
 
 class StatusUpdate(BaseModel):
@@ -240,6 +240,14 @@ def record_out(game_id: str, session: SessionDep) -> BaseballGameRead:
     game.outs += 1
     if game.outs >= 3:
         _end_half_inning(game)
+    return _to_read(_save(game, session))
+
+
+@router.patch("/{game_id}/change-sides")
+def change_sides(game_id: str, session: SessionDep) -> BaseballGameRead:
+    """End the current half-inning immediately (like a 3rd out)."""
+    game = _get_game(game_id, session)
+    _end_half_inning(game)
     return _to_read(_save(game, session))
 
 

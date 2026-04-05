@@ -340,6 +340,62 @@ def test_set_current_inning(client: TestClient) -> None:
     assert data["half"] == "bottom"
 
 
+# ── Score correction (negative runs) ─────────────────────────────────────────
+
+
+def test_inning_score_negative_correction(client: TestClient) -> None:
+    game_id = _new_game(client)
+    # Set inning 1 top to 3, then correct down to 1
+    client.patch(
+        f"/api/baseball/games/{game_id}/inning-score",
+        json={"inning": 1, "half": "top", "runs": 3},
+    )
+    resp = client.patch(
+        f"/api/baseball/games/{game_id}/inning-score",
+        json={"inning": 1, "half": "top", "runs": -1},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["scores"]["away"][0] == -1
+
+
+# ── Change sides ──────────────────────────────────────────────────────────────
+
+
+def test_change_sides_top_to_bottom(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(f"/api/baseball/games/{game_id}/change-sides")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["half"] == "bottom"
+    assert data["current_inning"] == 1
+    assert data["outs"] == 0
+    assert data["balls"] == 0
+    assert data["strikes"] == 0
+
+
+def test_change_sides_bottom_to_top_advances_inning(client: TestClient) -> None:
+    game_id = _new_game(client)
+    client.patch(f"/api/baseball/games/{game_id}/change-sides")  # top → bottom
+    resp = client.patch(f"/api/baseball/games/{game_id}/change-sides")  # bottom → top 2
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["half"] == "top"
+    assert data["current_inning"] == 2
+
+
+def test_change_sides_clears_bases(client: TestClient) -> None:
+    game_id = _new_game(client)
+    client.patch(
+        f"/api/baseball/games/{game_id}/bases",
+        json={"first": True, "second": True},
+    )
+    resp = client.patch(f"/api/baseball/games/{game_id}/change-sides")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["base_first"] is False
+    assert data["base_second"] is False
+
+
 # ── Status ───────────────────────────────────────────────────────────────────
 
 
