@@ -74,19 +74,19 @@
 
     .brand { font-size: 18px; font-weight: 700; color: var(--accent); }
 
-    .theme-btn {
-      background: transparent;
-      border: 1px solid var(--border-dark);
+    .theme-select {
+      background: var(--input-bg);
       color: var(--text-dim);
-      width: 28px; height: 28px;
-      border-radius: 50%;
+      border: 1px solid var(--border-dark);
+      padding: 4px 6px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
       cursor: pointer;
-      font-size: 14px;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; padding: 0;
-      transition: color 0.15s, border-color 0.15s;
+      outline: none;
+      flex-shrink: 0;
     }
-    .theme-btn:hover { color: var(--text); border-color: var(--text-dim); }
+    .theme-select:focus { border-color: var(--accent); color: var(--text); }
 
     main { flex: 1; padding: 24px; max-width: 960px; }
 
@@ -280,7 +280,11 @@
 <body>
   <header>
     <span class="brand">MANY BOARD</span>
-    <button onclick="cycleTheme()" class="theme-btn" style="margin-left:auto" title="Switch theme">◑</button>
+    <select id="theme-select" class="theme-select" onchange="applyTheme(this.value)" style="margin-left:auto" title="Switch theme">
+      <option value="default">Default</option>
+      <option value="stadium">Stadium</option>
+      <option value="field">Field</option>
+    </select>
   </header>
 
   <main>
@@ -358,18 +362,14 @@
 
   <script>
     // ── Theme ────────────────────────────────────────────
-    const THEMES = ['default', 'stadium', 'field'];
-    function cycleTheme() {
-      const cur = document.documentElement.getAttribute('data-theme') || 'default';
-      const next = THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length];
-      applyTheme(next);
-    }
     function applyTheme(t) {
       if (t === 'default') document.documentElement.removeAttribute('data-theme');
       else document.documentElement.setAttribute('data-theme', t);
       localStorage.setItem('mbTheme', t);
+      const sel = document.getElementById('theme-select');
+      if (sel) sel.value = t;
     }
-    (function() { const s = localStorage.getItem('mbTheme'); if (s) applyTheme(s); })();
+    (function() { applyTheme(localStorage.getItem('mbTheme') || 'default'); })();
 
     let allGames = [];
 
@@ -468,6 +468,7 @@
             <a href="/football.html?game=${g.id}&view=control" class="btn">Control</a>
             <a href="/football.html?game=${g.id}&view=gameclock" class="btn">Game Clock</a>
             <a href="/football.html?game=${g.id}&view=playclock" class="btn">Play Clock</a>
+            <a href="/football.html?game=${g.id}&view=ref" class="btn">Ref</a>
             <button class="btn btn-danger" onclick="deleteGame('football','${g.id}')">Delete</button>
           </div>
         </div>`;

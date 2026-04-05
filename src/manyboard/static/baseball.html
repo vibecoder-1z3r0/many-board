@@ -93,19 +93,19 @@
     .conn-status.lost { color: var(--accent); }
     .conn-status.lost .conn-dot { background: var(--accent); }
 
-    .theme-btn {
-      background: transparent;
-      border: 1px solid var(--border-dark);
+    .theme-select {
+      background: var(--input-bg);
       color: var(--text-dim);
-      width: 28px; height: 28px;
-      border-radius: 50%;
+      border: 1px solid var(--border-dark);
+      padding: 4px 6px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
       cursor: pointer;
-      font-size: 14px;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; padding: 0;
-      transition: color 0.15s, border-color 0.15s;
+      outline: none;
+      flex-shrink: 0;
     }
-    .theme-btn:hover { color: var(--text); border-color: var(--text-dim); }
+    .theme-select:focus { border-color: var(--accent); color: var(--text); }
 
     .view-tabs { display: flex; }
     .tab-btn {
@@ -372,7 +372,11 @@
       <button class="tab-btn" id="tab-boxscore" onclick="switchView('boxscore')">Box Score</button>
       <button class="tab-btn" id="tab-ump"      onclick="switchView('ump')">Ump</button>
     </nav>
-    <button onclick="cycleTheme()" class="theme-btn" title="Switch theme">◑</button>
+    <select id="theme-select" class="theme-select" onchange="applyTheme(this.value)" title="Switch theme">
+      <option value="default">Default</option>
+      <option value="stadium">Stadium</option>
+      <option value="field">Field</option>
+    </select>
     <span id="conn-status" class="conn-status connected"><span class="conn-dot"></span>Connected</span>
   </header>
 
@@ -551,18 +555,14 @@
     let state = null;
 
     // ── Theme ────────────────────────────────────────────
-    const THEMES = ['default', 'stadium', 'field'];
-    function cycleTheme() {
-      const cur = document.documentElement.getAttribute('data-theme') || 'default';
-      const next = THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length];
-      applyTheme(next);
-    }
     function applyTheme(t) {
       if (t === 'default') document.documentElement.removeAttribute('data-theme');
       else document.documentElement.setAttribute('data-theme', t);
       localStorage.setItem('mbTheme', t);
+      const sel = document.getElementById('theme-select');
+      if (sel) sel.value = t;
     }
-    (function() { const s = localStorage.getItem('mbTheme'); if (s) applyTheme(s); })();
+    (function() { applyTheme(localStorage.getItem('mbTheme') || 'default'); })();
 
     if (!gameId) { window.location.href = '/'; }
 
