@@ -446,5 +446,20 @@ def stop_play_clock(game_id: str, session: SessionDep) -> FootballGameRead:
     return _to_read(_save(game, session))
 
 
+@router.patch("/{game_id}/play-clock/default")
+def set_play_clock_default(
+    game_id: str, update: ClockSet, session: SessionDep
+) -> FootballGameRead:
+    """Change the reset duration. Also resets the current clock if it is stopped."""
+    game = _get_game(game_id, session)
+    if update.seconds < 1:
+        raise HTTPException(status_code=422, detail="Default must be >= 1 second")
+    game.play_clock_default = update.seconds
+    if not game.play_clock_running:
+        game.play_clock = update.seconds
+        game.play_clock_started_at = None
+    return _to_read(_save(game, session))
+
+
 # Keep unused imports quiet
 __all__ = ["router", "Down", "Half"]
