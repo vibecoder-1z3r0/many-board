@@ -290,14 +290,18 @@ def test_get_returns_computed_clock_while_running(client: TestClient) -> None:
 def test_half_scores_initialized_null(client: TestClient) -> None:
     game_id = _new_game(client)
     data = client.get(f"/api/football/games/{game_id}").json()
-    assert data["half_scores"] == {"away": [None, None, None], "home": [None, None, None]}
+    null3: list[None] = [None, None, None]
+    assert data["half_scores"] == {"away": null3, "home": null3}
 
 
 def test_half_transition_snapshots_first_half(client: TestClient) -> None:
     game_id = _new_game(client)
-    client.patch(f"/api/football/games/{game_id}/score", json={"team": "home", "delta": 6})
-    client.patch(f"/api/football/games/{game_id}/score", json={"team": "away", "delta": 7})
-    resp = client.patch(f"/api/football/games/{game_id}/half", json={"half": "halftime"})
+    score = f"/api/football/games/{game_id}/score"
+    client.patch(score, json={"team": "home", "delta": 6})
+    client.patch(score, json={"team": "away", "delta": 7})
+    resp = client.patch(
+        f"/api/football/games/{game_id}/half", json={"half": "halftime"}
+    )
     assert resp.status_code == 200
     hs = resp.json()["half_scores"]
     assert hs["home"][0] == 6
@@ -307,10 +311,12 @@ def test_half_transition_snapshots_first_half(client: TestClient) -> None:
 
 def test_half_transition_snapshots_second_half(client: TestClient) -> None:
     game_id = _new_game(client)
-    client.patch(f"/api/football/games/{game_id}/score", json={"team": "home", "delta": 6})
-    client.patch(f"/api/football/games/{game_id}/half", json={"half": "halftime"})
-    client.patch(f"/api/football/games/{game_id}/half", json={"half": "second"})
-    client.patch(f"/api/football/games/{game_id}/score", json={"team": "home", "delta": 7})
+    score = f"/api/football/games/{game_id}/score"
+    half = f"/api/football/games/{game_id}/half"
+    client.patch(score, json={"team": "home", "delta": 6})
+    client.patch(half, json={"half": "halftime"})
+    client.patch(half, json={"half": "second"})
+    client.patch(score, json={"team": "home", "delta": 7})
     resp = client.patch(f"/api/football/games/{game_id}/half", json={"half": "final"})
     hs = resp.json()["half_scores"]
     assert hs["home"][0] == 6   # 1H
@@ -319,11 +325,13 @@ def test_half_transition_snapshots_second_half(client: TestClient) -> None:
 
 def test_half_score_ot_transition(client: TestClient) -> None:
     game_id = _new_game(client)
-    client.patch(f"/api/football/games/{game_id}/half", json={"half": "halftime"})
-    client.patch(f"/api/football/games/{game_id}/half", json={"half": "second"})
-    client.patch(f"/api/football/games/{game_id}/score", json={"team": "away", "delta": 6})
-    client.patch(f"/api/football/games/{game_id}/half", json={"half": "ot"})
-    client.patch(f"/api/football/games/{game_id}/score", json={"team": "home", "delta": 6})
+    score = f"/api/football/games/{game_id}/score"
+    half = f"/api/football/games/{game_id}/half"
+    client.patch(half, json={"half": "halftime"})
+    client.patch(half, json={"half": "second"})
+    client.patch(score, json={"team": "away", "delta": 6})
+    client.patch(half, json={"half": "ot"})
+    client.patch(score, json={"team": "home", "delta": 6})
     resp = client.patch(f"/api/football/games/{game_id}/half", json={"half": "final"})
     hs = resp.json()["half_scores"]
     assert hs["away"][1] == 6   # 2H

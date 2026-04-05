@@ -14,6 +14,7 @@ from manyboard.models.baseball import (
     BaseballGameCreate,
     BaseballGameRead,
     BSOStyle,
+    InningCell,
     InningHalf,
     InningScores,
 )
@@ -49,7 +50,8 @@ class InningNavUpdate(BaseModel):
 class InningScoreUpdate(BaseModel):
     inning: Annotated[int, Field(ge=1)]
     half: InningHalf
-    runs: int  # negative allowed for score correction
+    # int = runs scored; None = set dash ("-"); negative allowed for correction
+    runs: int | None
 
 
 class StatusUpdate(BaseModel):
@@ -78,12 +80,17 @@ def _save(game: BaseballGame, session: Session) -> BaseballGame:
     return game
 
 
-def _get_scores(game: BaseballGame) -> dict[str, list[int | None]]:
+def _get_scores(game: BaseballGame) -> dict[str, list[InningCell]]:
     return json.loads(game.scores_json)  # type: ignore[no-any-return]
 
 
-def _set_scores(game: BaseballGame, scores: dict[str, list[int | None]]) -> None:
+def _set_scores(game: BaseballGame, scores: dict[str, list[InningCell]]) -> None:
     game.scores_json = json.dumps(scores)
+
+
+def _cell_runs(cell: InningCell) -> int:
+    """Numeric value of a cell for totals: int as-is, dash/None = 0."""
+    return cell if isinstance(cell, int) else 0
 
 
 def _current_team(game: BaseballGame) -> str:
@@ -140,8 +147,8 @@ def _to_read(game: BaseballGame) -> BaseballGameRead:
         base_second=game.base_second,
         base_third=game.base_third,
         bso_style=game.bso_style,
-        away_total=sum(s for s in away if s is not None),
-        home_total=sum(s for s in home if s is not None),
+        away_total=sum(_cell_runs(s) for s in away),
+        home_total=sum(_cell_runs(s) for s in home),
         status=game.status,
         created_at=game.created_at,
         updated_at=game.updated_at,
@@ -266,7 +273,7 @@ def record_run(game_id: str, session: SessionDep) -> BaseballGameRead:
     team = _current_team(game)
     idx = _inning_idx(game)
     if 0 <= idx < len(scores[team]):
-        scores[team][idx] = (scores[team][idx] or 0) + 1
+        scores[team][idx] = _cell_runs(scores[team][idx]) + 1
     _set_scores(game, scores)
     return _to_read(_save(game, session))
 
@@ -281,7 +288,8 @@ def set_inning_score(
     idx = update.inning - 1
     if idx < 0 or idx >= len(scores[team]):
         raise HTTPException(status_code=400, detail="Inning out of range")
-    scores[team][idx] = update.runs
+    # None → dash; int stored as-is (negative allowed for score correction)
+    scores[team][idx] = "-" if update.runs is None else update.runs
     _set_scores(game, scores)
     return _to_read(_save(game, session))
 

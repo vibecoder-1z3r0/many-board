@@ -43,6 +43,11 @@ class Possession(StrEnum):
     AWAY = "away"
 
 
+class PAT(StrEnum):
+    ONE = "1pt"
+    TWO = "2pt"
+
+
 # HalfScores[team] = [1H, 2H, OT], each int | None
 HalfScores = dict[str, list[int | None]]
 
@@ -75,6 +80,10 @@ class FootballGame(SQLModel, table=True):
     play_clock_running: bool = Field(default=False)
     play_clock_started_at: datetime | None = Field(default=None)
     no_run_zone: bool = Field(default=False)
+    # PAT: point-after-touchdown attempt marker (null = normal down, 1pt/2pt = PAT mode)
+    pat: PAT | None = Field(default=None)
+    # ot_enabled: OT column/button only shown when explicitly activated
+    ot_enabled: bool = Field(default=False)
     # Naive UTC datetimes — SQLite does not preserve timezone info
     created_at: datetime = Field(default_factory=_utcnow)
     updated_at: datetime = Field(default_factory=_utcnow)
@@ -111,5 +120,7 @@ class FootballGameRead(SQLModel):
     play_clock: int  # current computed value
     play_clock_running: bool
     no_run_zone: bool
+    pat: PAT | None
+    ot_enabled: bool
     created_at: datetime
     updated_at: datetime

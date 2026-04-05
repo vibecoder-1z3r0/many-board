@@ -36,8 +36,8 @@ class BaseballGame(SQLModel, table=True):
     away_team: str = Field(default="Away")
     num_innings: int = Field(default=6, ge=1)
 
-    # JSON string: {"away": [3, 0, null, ...], "home": [0, null, ...]}
-    # null = not yet played; integer = finalized runs (0 means played, no runs)
+    # JSON string: {"away": [3, 0, null, "-", ...], "home": [0, null, ...]}
+    # null = not yet played; int = finalized runs; "-" = dash (e.g. home wins early)
     scores_json: str = Field(default_factory=_default_scores_json)
 
     current_inning: int = Field(default=1, ge=1)
@@ -67,9 +67,13 @@ class BaseballGameCreate(SQLModel):
     bso_style: BSOStyle = BSOStyle.DOTS
 
 
+# Each cell: int (runs scored), None (not played), or "-" (dash — played but no batting)
+InningCell = int | str | None
+
+
 class InningScores(SQLModel):
-    away: list[int | None]
-    home: list[int | None]
+    away: list[InningCell]
+    home: list[InningCell]
 
 
 class BaseballGameRead(SQLModel):

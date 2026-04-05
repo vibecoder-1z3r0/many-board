@@ -515,7 +515,7 @@
         <button class="btn-state" id="half-first"    onclick="setHalf('first')">1st Half</button>
         <button class="btn-state" id="half-halftime" onclick="setHalf('halftime')">Halftime</button>
         <button class="btn-state" id="half-second"   onclick="setHalf('second')">2nd Half</button>
-        <button class="btn-state" id="half-ot"       onclick="setHalf('ot')">OT</button>
+        <button class="btn-state" id="half-ot" style="display:none" onclick="setHalf('ot')">OT</button>
         <button class="btn-state" id="half-final"    onclick="setHalf('final')">Final</button>
       </div>
     </div>
@@ -561,11 +561,17 @@
       </div>
     </div>
 
-    <!-- No Run Zone -->
+    <!-- No Run Zone / PAT / OT -->
     <div class="ctrl-section">
       <div class="ctrl-header">Situational</div>
       <div class="ctrl-row">
         <button class="btn-nrz" id="nrz-btn" onclick="toggleNRZ()">No Run Zone</button>
+        <button class="btn-nrz" id="pat-1pt-btn" onclick="setPAT('1pt')">PAT 1pt</button>
+        <button class="btn-nrz" id="pat-2pt-btn" onclick="setPAT('2pt')">PAT 2pt</button>
+        <button class="btn-nrz" id="pat-clear-btn" onclick="setPAT(null)" style="font-size:11px">Clear PAT</button>
+      </div>
+      <div class="ctrl-row" style="margin-top:6px;">
+        <button class="btn-nrz" id="ot-enable-btn" onclick="toggleOT()">Enable OT</button>
       </div>
     </div>
 
@@ -703,11 +709,15 @@
       const distMap = { midfield:'Midfield', goal:'Goal' };
 
       setText('d-half', halfMap[state.half] || state.half);
-      setText('d-down-dist', `${downMap[state.down]} & ${distMap[state.distance]}`);
+      if (state.pat) {
+        setText('d-down-dist', `PAT — ${state.pat} attempt`);
+      } else {
+        setText('d-down-dist', `${downMap[state.down]} & ${distMap[state.distance]}`);
+      }
 
       // Box score table
       const hs = state.half_scores;
-      const showOT = hs.away[2] !== null || hs.home[2] !== null || state.half === 'ot';
+      const showOT = state.ot_enabled || hs.away[2] !== null || hs.home[2] !== null;
       document.getElementById('d-ot-header').style.display = showOT ? '' : 'none';
 
       const activeCols = { first: 0, second: 1, ot: 2 };
@@ -769,9 +779,15 @@
       renderDots('c-home-to-dots', state.home_timeouts, 'ctrl-dot', 3);
       renderDots('c-away-to-dots', state.away_timeouts, 'ctrl-dot', 3);
 
-      ['first','halftime','second','ot','final'].forEach(h =>
+      ['first','halftime','second','final'].forEach(h =>
         document.getElementById('half-' + h)?.classList.toggle('active', state.half === h)
       );
+      const otBtn = document.getElementById('half-ot');
+      if (otBtn) {
+        otBtn.style.display = state.ot_enabled ? '' : 'none';
+        otBtn.classList.toggle('active', state.half === 'ot');
+      }
+      document.getElementById('ot-enable-btn')?.classList.toggle('active', state.ot_enabled);
 
       renderClockElements();
       const gcBtn = document.getElementById('game-clock-toggle-btn');
@@ -780,6 +796,8 @@
       if (pcBtn) pcBtn.textContent = state.play_clock_running ? 'Stop' : 'Start';
 
       document.getElementById('nrz-btn')?.classList.toggle('active', state.no_run_zone);
+      document.getElementById('pat-1pt-btn')?.classList.toggle('active', state.pat === '1pt');
+      document.getElementById('pat-2pt-btn')?.classList.toggle('active', state.pat === '2pt');
     }
 
     function renderGameClockView() {
@@ -821,7 +839,9 @@
     async function useTimeout(team)          { await patch('timeout', { team }); }
     async function restoreTimeout(team)      { await patch('timeout/restore', { team }); }
     async function setHalf(h)                { await patch('half', { half: h }); }
-    async function toggleNRZ()               { if (state) await patch('no-run-zone', { enabled: !state.no_run_zone }); }
+    async function toggleNRZ()  { if (state) await patch('no-run-zone', { enabled: !state.no_run_zone }); }
+    async function setPAT(val)  { await patch('pat', { pat: val }); }
+    async function toggleOT()   { if (state) await patch('ot', { enabled: !state.ot_enabled }); }
 
     async function setHalfScore() {
       const half   = document.getElementById('corr-half').value;

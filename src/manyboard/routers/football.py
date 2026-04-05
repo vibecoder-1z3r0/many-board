@@ -10,6 +10,7 @@ from sqlmodel import Session, select
 
 from manyboard.database import get_session
 from manyboard.models.football import (
+    PAT,
     Distance,
     Down,
     FootballGame,
@@ -47,6 +48,14 @@ class TeamUpdate(BaseModel):
 
 
 class NoRunZoneUpdate(BaseModel):
+    enabled: bool
+
+
+class PATUpdate(BaseModel):
+    pat: PAT | None  # None clears PAT mode
+
+
+class OTEnabledUpdate(BaseModel):
     enabled: bool
 
 
@@ -291,6 +300,26 @@ def update_no_run_zone(
 ) -> FootballGameRead:
     game = _get_game(game_id, session)
     game.no_run_zone = update.enabled
+    return _to_read(_save(game, session))
+
+
+@router.patch("/{game_id}/pat")
+def update_pat(
+    game_id: str, update: PATUpdate, session: SessionDep
+) -> FootballGameRead:
+    """Set PAT mode (1pt/2pt attempt) or clear it (null)."""
+    game = _get_game(game_id, session)
+    game.pat = update.pat
+    return _to_read(_save(game, session))
+
+
+@router.patch("/{game_id}/ot")
+def update_ot_enabled(
+    game_id: str, update: OTEnabledUpdate, session: SessionDep
+) -> FootballGameRead:
+    """Enable or disable the OT period for this game."""
+    game = _get_game(game_id, session)
+    game.ot_enabled = update.enabled
     return _to_read(_save(game, session))
 
 

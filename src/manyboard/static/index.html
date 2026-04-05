@@ -339,7 +339,7 @@
       const downLabel = ['','1st','2nd','3rd','4th'][g.down] || g.down;
       const distLabel = { midfield:'Midfield', goal:'Goal' }[g.distance] || g.distance;
       const hs = g.half_scores || { away:[null,null,null], home:[null,null,null] };
-      const showOT = hs.away[2] !== null || hs.home[2] !== null || g.half === 'ot';
+      const showOT = g.ot_enabled || hs.away[2] !== null || hs.home[2] !== null;
       const activeIdx = { first:0, second:1, ot:2 }[g.half];
       const cols = [0, 1, ...(showOT ? [2] : [])];
       const colHeaders = ['1H','2H','OT'];
@@ -399,8 +399,10 @@
       function bbCell(team, idx) {
         const v = scores[team][idx];
         const isCurrent = idx === activeIdx && !isFinal;
-        const cls = v === null ? (isCurrent ? 'active-h' : 'empty-h') : '';
-        return `<td class="${cls}">${v === null ? (isCurrent ? '—' : '') : v}</td>`;
+        if (v === null) {
+          return `<td class="${isCurrent ? 'active-h' : 'empty-h'}">${isCurrent ? '—' : ''}</td>`;
+        }
+        return `<td>${v}</td>`;
       }
 
       return `
