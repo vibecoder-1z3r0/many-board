@@ -64,15 +64,15 @@
     .view.active { display: flex; }
 
     /* ════════════════════════════════════════════════════════
-       DISPLAY VIEW — Box Score
+       DISPLAY VIEW — TV Scoreboard
     ════════════════════════════════════════════════════════ */
-    #view-display {
+    #view-display, #view-boxscore {
       flex-direction: column;
       align-items: center;
       justify-content: center;
       background: #1a1a2e;
       padding: 32px 16px;
-      gap: 24px;
+      gap: 20px;
     }
 
     .d-game-status {
@@ -90,60 +90,42 @@
       letter-spacing: 1px;
     }
 
-    /* Box score table */
-    .d-box-wrap { width: 100%; max-width: 820px; }
-
-    .d-box-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-family: monospace;
-    }
-
-    .d-box-table th {
-      font-size: 13px;
-      font-weight: 700;
-      color: #555;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      padding: 6px 12px;
-      text-align: center;
-      border-bottom: 1px solid #333;
-    }
-    .d-box-table th.team-col { text-align: left; min-width: 120px; }
-
-    .d-box-table td {
-      font-size: 28px;
-      font-weight: 700;
-      color: #888;
-      text-align: center;
-      padding: 10px 12px;
-    }
-    .d-box-table td.team-col {
-      font-size: 24px;
-      font-weight: 700;
-      color: #e0e0e0;
-      text-align: left;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-    .d-box-table td.team-col.has-ball { color: #e94560; }
-    .d-box-table td.total-col {
-      font-size: 52px;
-      color: #fff;
-      padding: 10px 20px;
-      border-left: 1px solid #333;
-    }
-    .d-box-table td.active-col { color: #4fc3f7; }
-    .d-box-table td.empty-col  { color: #333; }
-
-    .d-possession-row {
+    /* Original scoreboard layout */
+    .d-teams-row {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      color: #888;
+      gap: 48px;
+      width: 100%;
+      max-width: 900px;
+      justify-content: center;
     }
-    .d-poss-arrow { font-size: 20px; color: #e94560; font-weight: 700; }
+
+    .d-team {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      max-width: 300px;
+    }
+
+    .d-team-name {
+      font-size: 32px;
+      font-weight: 700;
+      color: #e0e0e0;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-align: center;
+    }
+    .d-team-name.has-ball { color: #e94560; }
+
+    .d-team-score {
+      font-size: 100px;
+      font-weight: 700;
+      color: #fff;
+      font-family: monospace;
+      line-height: 1;
+    }
 
     .d-timeouts { display: flex; gap: 8px; }
     .d-timeout-dot {
@@ -151,14 +133,15 @@
     }
     .d-timeout-dot.used { background: #333; }
 
-    .d-to-row {
+    .d-divider {
       display: flex;
-      gap: 32px;
+      flex-direction: column;
       align-items: center;
-      font-size: 12px;
-      color: #555;
+      gap: 8px;
     }
-    .d-to-team { display: flex; align-items: center; gap: 8px; }
+
+    .d-possession-arrow { font-size: 28px; color: #e94560; font-weight: 700; }
+    .d-possession-label { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 1px; }
 
     .d-clock-wrap {
       display: flex;
@@ -196,6 +179,61 @@
       letter-spacing: 2px;
       text-transform: uppercase;
     }
+
+    /* Box score table (box score view) */
+    .d-box-wrap { width: 100%; max-width: 820px; }
+
+    .d-box-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: monospace;
+    }
+    .d-box-table th {
+      font-size: 13px;
+      font-weight: 700;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 6px 12px;
+      text-align: center;
+      border-bottom: 1px solid #333;
+    }
+    .d-box-table th.team-col { text-align: left; min-width: 120px; }
+    .d-box-table td {
+      font-size: 28px;
+      font-weight: 700;
+      color: #888;
+      text-align: center;
+      padding: 10px 12px;
+    }
+    .d-box-table td.team-col {
+      font-size: 24px;
+      font-weight: 700;
+      color: #e0e0e0;
+      text-align: left;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .d-box-table td.team-col.has-ball { color: #e94560; }
+    .d-box-table td.total-col {
+      font-size: 52px;
+      color: #fff;
+      padding: 10px 20px;
+      border-left: 1px solid #333;
+    }
+    .d-box-table td.active-col { color: #4fc3f7; }
+    .d-box-table td.empty-col  { color: #333; }
+
+    .d-possession-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #888;
+    }
+    .d-poss-arrow { font-size: 20px; color: #e94560; font-weight: 700; }
+    .d-to-row { display: flex; gap: 32px; align-items: center; font-size: 12px; color: #555; }
+    .d-to-team { display: flex; align-items: center; gap: 8px; }
 
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
     @keyframes spin   { to { transform: rotate(360deg); } }
@@ -381,46 +419,35 @@
     <a href="/" class="brand">MANY BOARD</a>
     <span class="header-score" id="header-score"></span>
     <nav class="view-tabs">
-      <button class="tab-btn" id="tab-display"    onclick="switchView('display')">Display</button>
-      <button class="tab-btn" id="tab-control"    onclick="switchView('control')">Control</button>
-      <button class="tab-btn" id="tab-gameclock"  onclick="switchView('gameclock')">Game Clock</button>
-      <button class="tab-btn" id="tab-playclock"  onclick="switchView('playclock')">Play Clock</button>
+      <button class="tab-btn" id="tab-display"   onclick="switchView('display')">Display</button>
+      <button class="tab-btn" id="tab-boxscore"  onclick="switchView('boxscore')">Box Score</button>
+      <button class="tab-btn" id="tab-control"   onclick="switchView('control')">Control</button>
+      <button class="tab-btn" id="tab-gameclock" onclick="switchView('gameclock')">Game Clock</button>
+      <button class="tab-btn" id="tab-playclock" onclick="switchView('playclock')">Play Clock</button>
     </nav>
   </header>
 
-  <!-- ── DISPLAY VIEW — Box Score ─────────────────────── -->
+  <!-- ── DISPLAY VIEW — TV Scoreboard ─────────────────── -->
   <div class="view" id="view-display">
     <div class="d-game-status" id="d-half"></div>
     <div class="d-down-distance" id="d-down-dist"></div>
 
-    <div class="d-box-wrap">
-      <table class="d-box-table" id="d-box-table">
-        <thead>
-          <tr>
-            <th class="team-col"></th>
-            <th>1H</th>
-            <th>2H</th>
-            <th id="d-ot-header" style="display:none">OT</th>
-            <th style="border-left:1px solid #333">Total</th>
-          </tr>
-        </thead>
-        <tbody id="d-box-body"></tbody>
-      </table>
-    </div>
+    <div class="d-teams-row">
+      <div class="d-team">
+        <div class="d-team-name" id="d-away-name"></div>
+        <div class="d-team-score" id="d-away-score"></div>
+        <div class="d-timeouts" id="d-away-timeouts"></div>
+      </div>
 
-    <div class="d-possession-row">
-      <span class="d-poss-arrow" id="d-poss-arrow"></span>
-      <span id="d-poss-label"></span>
-      &nbsp;·&nbsp;
-      <div class="d-to-row">
-        <div class="d-to-team">
-          <span id="d-home-to-name" style="color:#888"></span>
-          <div class="d-timeouts" id="d-home-timeouts"></div>
-        </div>
-        <div class="d-to-team">
-          <span id="d-away-to-name" style="color:#888"></span>
-          <div class="d-timeouts" id="d-away-timeouts"></div>
-        </div>
+      <div class="d-divider">
+        <div class="d-possession-arrow" id="d-poss-arrow"></div>
+        <div class="d-possession-label">possession</div>
+      </div>
+
+      <div class="d-team">
+        <div class="d-team-name" id="d-home-name"></div>
+        <div class="d-team-score" id="d-home-score"></div>
+        <div class="d-timeouts" id="d-home-timeouts"></div>
       </div>
     </div>
 
@@ -436,6 +463,56 @@
     </div>
 
     <div class="d-nrz-badge" id="d-nrz" style="display:none">NO RUN ZONE</div>
+  </div>
+
+  <!-- ── BOX SCORE VIEW ────────────────────────────────── -->
+  <div class="view" id="view-boxscore">
+    <div class="d-game-status" id="bs-half"></div>
+    <div class="d-down-distance" id="bs-down-dist"></div>
+
+    <div class="d-box-wrap">
+      <table class="d-box-table">
+        <thead>
+          <tr>
+            <th class="team-col"></th>
+            <th>1H</th>
+            <th>2H</th>
+            <th id="bs-ot-header" style="display:none">OT</th>
+            <th style="border-left:1px solid #333">Total</th>
+          </tr>
+        </thead>
+        <tbody id="bs-box-body"></tbody>
+      </table>
+    </div>
+
+    <div class="d-possession-row">
+      <span class="d-poss-arrow" id="bs-poss-arrow"></span>
+      <span id="bs-poss-label"></span>
+      &nbsp;·&nbsp;
+      <div class="d-to-row">
+        <div class="d-to-team">
+          <span id="bs-away-to-name" style="color:#888"></span>
+          <div class="d-timeouts" id="bs-away-timeouts"></div>
+        </div>
+        <div class="d-to-team">
+          <span id="bs-home-to-name" style="color:#888"></span>
+          <div class="d-timeouts" id="bs-home-timeouts"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-clock-wrap">
+      <div class="d-single-clock">
+        <div class="d-clock-value" id="bs-game-clock"></div>
+        <div class="d-clock-label">game clock</div>
+      </div>
+      <div class="d-single-clock">
+        <div class="d-clock-value" id="bs-play-clock" style="font-size:40px"></div>
+        <div class="d-clock-label">play clock</div>
+      </div>
+    </div>
+
+    <div class="d-nrz-badge" id="bs-nrz" style="display:none">NO RUN ZONE</div>
   </div>
 
   <!-- ── CONTROL VIEW ──────────────────────────────────── -->
@@ -465,6 +542,16 @@
         <button class="btn-score" onclick="addScore('away',3)">FG +3</button>
         <button class="btn-score" onclick="addScore('away',2)">SAF +2</button>
         <button class="btn-score negative" onclick="addScore('away',-1)">-1</button>
+      </div>
+    </div>
+
+    <!-- PAT Attempt -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">After TD — Point Attempt</div>
+      <div class="ctrl-row">
+        <button class="btn-state" id="pat-1pt-btn" onclick="setPAT('1pt')">1-Pt Attempt</button>
+        <button class="btn-state" id="pat-2pt-btn" onclick="setPAT('2pt')">2-Pt Attempt</button>
+        <button class="btn" id="pat-clear-btn" onclick="setPAT(null)">Clear</button>
       </div>
     </div>
 
@@ -561,16 +648,11 @@
       </div>
     </div>
 
-    <!-- No Run Zone / PAT / OT -->
+    <!-- No Run Zone / OT -->
     <div class="ctrl-section">
       <div class="ctrl-header">Situational</div>
       <div class="ctrl-row">
         <button class="btn-nrz" id="nrz-btn" onclick="toggleNRZ()">No Run Zone</button>
-        <button class="btn-nrz" id="pat-1pt-btn" onclick="setPAT('1pt')">PAT 1pt</button>
-        <button class="btn-nrz" id="pat-2pt-btn" onclick="setPAT('2pt')">PAT 2pt</button>
-        <button class="btn-nrz" id="pat-clear-btn" onclick="setPAT(null)" style="font-size:11px">Clear PAT</button>
-      </div>
-      <div class="ctrl-row" style="margin-top:6px;">
         <button class="btn-nrz" id="ot-enable-btn" onclick="toggleOT()">Enable OT</button>
       </div>
     </div>
@@ -651,18 +733,26 @@
     }, 1000);
 
     // ── Render ───────────────────────────────────────────
+    const HALF_LABEL = {
+      first:'1st Half', halftime:'Halftime', second:'2nd Half',
+      ot:'Overtime', final:'Final'
+    };
+    const DOWN_LABEL = { 1:'1st', 2:'2nd', 3:'3rd', 4:'4th' };
+    const DIST_LABEL = { midfield:'Midfield', goal:'Goal' };
+
     function render() {
       if (!state) return;
       renderHeader();
-      if (view === 'display')    renderDisplay();
-      else if (view === 'control')    renderControl();
-      else if (view === 'gameclock')  renderGameClockView();
-      else if (view === 'playclock')  renderPlayClockView();
+      if (view === 'display')       renderDisplay();
+      else if (view === 'boxscore') renderBoxscore();
+      else if (view === 'control')  renderControl();
+      else if (view === 'gameclock') renderGameClockView();
+      else if (view === 'playclock') renderPlayClockView();
     }
 
     function renderHeader() {
       document.getElementById('header-score').textContent =
-        `${state.home_team} ${state.home_score} – ${state.away_score} ${state.away_team}`;
+        `${state.away_team} ${state.away_score} – ${state.home_score} ${state.home_team}`;
     }
 
     function renderClockElements() {
@@ -671,27 +761,25 @@
       const gcRun = state?.game_clock_running ?? false;
       const pcRun = state?.play_clock_running ?? false;
 
-      // Display view
-      setText('d-game-clock', fmtMmSs(gcVal));
-      setText('d-play-clock', pcVal);
-      document.getElementById('d-game-clock')?.classList.toggle('running', gcRun);
-      document.getElementById('d-play-clock')?.classList.toggle('running', pcRun);
+      // IDs that need updating across all views
+      [
+        ['d-game-clock',  fmtMmSs(gcVal), gcRun, false],
+        ['d-play-clock',  pcVal,           pcRun, false],
+        ['bs-game-clock', fmtMmSs(gcVal), gcRun, false],
+        ['bs-play-clock', pcVal,           pcRun, false],
+        ['c-game-clock-display', fmtMmSs(gcVal), gcRun, false],
+        ['c-play-clock-display', pcVal,           pcRun, false],
+      ].forEach(([id, val, running]) => {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = val; el.classList.toggle('running', running); }
+      });
 
-      // Control view
-      setText('c-game-clock-display', fmtMmSs(gcVal));
-      setText('c-play-clock-display', pcVal);
-      document.getElementById('c-game-clock-display')?.classList.toggle('running', gcRun);
-      document.getElementById('c-play-clock-display')?.classList.toggle('running', pcRun);
-
-      // Game clock fullscreen view
       const gckEl = document.getElementById('gck-clock');
       if (gckEl) {
         gckEl.textContent = fmtMmSs(gcVal);
         gckEl.classList.toggle('running', gcRun);
         gckEl.classList.toggle('expired', gcVal === 0);
       }
-
-      // Play clock fullscreen view
       const pckEl = document.getElementById('pck-clock');
       if (pckEl) {
         pckEl.textContent = pcVal;
@@ -700,42 +788,48 @@
       }
     }
 
+    function downDistText() {
+      if (state.pat) return `PAT — ${state.pat} Attempt`;
+      return `${DOWN_LABEL[state.down]} & ${DIST_LABEL[state.distance]}`;
+    }
+
     function renderDisplay() {
-      const halfMap = {
-        first:'1st Half', halftime:'Halftime', second:'2nd Half',
-        ot:'Overtime', final:'Final'
-      };
-      const downMap = { 1:'1st', 2:'2nd', 3:'3rd', 4:'4th' };
-      const distMap = { midfield:'Midfield', goal:'Goal' };
+      setText('d-half', HALF_LABEL[state.half] || state.half);
+      setText('d-down-dist', downDistText());
 
-      setText('d-half', halfMap[state.half] || state.half);
-      if (state.pat) {
-        setText('d-down-dist', `PAT — ${state.pat} attempt`);
-      } else {
-        setText('d-down-dist', `${downMap[state.down]} & ${distMap[state.distance]}`);
-      }
+      setText('d-away-name', state.away_team.toUpperCase());
+      setText('d-home-name', state.home_team.toUpperCase());
+      setText('d-away-score', state.away_score);
+      setText('d-home-score', state.home_score);
 
-      // Box score table
+      document.getElementById('d-away-name')?.classList.toggle('has-ball', state.possession === 'away');
+      document.getElementById('d-home-name')?.classList.toggle('has-ball', state.possession === 'home');
+      setText('d-poss-arrow', state.possession === 'away' ? '←' : '→');
+
+      renderDots('d-away-timeouts', state.away_timeouts, 'd-timeout-dot', 3);
+      renderDots('d-home-timeouts', state.home_timeouts, 'd-timeout-dot', 3);
+      renderClockElements();
+      document.getElementById('d-nrz').style.display = state.no_run_zone ? 'block' : 'none';
+    }
+
+    function renderBoxscore() {
+      setText('bs-half', HALF_LABEL[state.half] || state.half);
+      setText('bs-down-dist', downDistText());
+
       const hs = state.half_scores;
       const showOT = state.ot_enabled || hs.away[2] !== null || hs.home[2] !== null;
-      document.getElementById('d-ot-header').style.display = showOT ? '' : 'none';
+      document.getElementById('bs-ot-header').style.display = showOT ? '' : 'none';
 
-      const activeCols = { first: 0, second: 1, ot: 2 };
-      const activeIdx = activeCols[state.half];
-      const awayTotal = state.away_score;
-      const homeTotal = state.home_score;
-
-      const tbody = document.getElementById('d-box-body');
+      const activeIdx = { first:0, second:1, ot:2 }[state.half];
+      const tbody = document.getElementById('bs-box-body');
       const rows = [
-        { label: state.away_team, key: 'away', total: awayTotal, poss: state.possession === 'away' },
-        { label: state.home_team, key: 'home', total: homeTotal, poss: state.possession === 'home' },
+        { label: state.away_team, key: 'away', total: state.away_score, poss: state.possession === 'away' },
+        { label: state.home_team, key: 'home', total: state.home_score, poss: state.possession === 'home' },
       ];
       tbody.innerHTML = rows.map(r => {
         const cells = [0, 1, ...(showOT ? [2] : [])].map(i => {
           const v = hs[r.key][i];
-          const cls = v === null
-            ? (i === activeIdx ? 'active-col' : 'empty-col')
-            : '';
+          const cls = v === null ? (i === activeIdx ? 'active-col' : 'empty-col') : '';
           return `<td class="${cls}">${v === null ? (i === activeIdx ? '—' : '') : v}</td>`;
         }).join('');
         return `<tr>
@@ -745,15 +839,15 @@
         </tr>`;
       }).join('');
 
-      setText('d-poss-arrow', state.possession === 'home' ? '▶' : '◀');
-      setText('d-poss-label', `${state.possession === 'home' ? state.home_team : state.away_team} ball`);
-
-      setText('d-home-to-name', state.home_team);
-      setText('d-away-to-name', state.away_team);
-      renderDots('d-home-timeouts', state.home_timeouts, 'd-timeout-dot', 3);
-      renderDots('d-away-timeouts', state.away_timeouts, 'd-timeout-dot', 3);
+      setText('bs-poss-arrow', state.possession === 'away' ? '◀' : '▶');
+      setText('bs-poss-label',
+        `${state.possession === 'away' ? state.away_team : state.home_team} ball`);
+      setText('bs-away-to-name', state.away_team);
+      setText('bs-home-to-name', state.home_team);
+      renderDots('bs-away-timeouts', state.away_timeouts, 'd-timeout-dot', 3);
+      renderDots('bs-home-timeouts', state.home_timeouts, 'd-timeout-dot', 3);
       renderClockElements();
-      document.getElementById('d-nrz').style.display = state.no_run_zone ? 'block' : 'none';
+      document.getElementById('bs-nrz').style.display = state.no_run_zone ? 'block' : 'none';
     }
 
     function renderControl() {

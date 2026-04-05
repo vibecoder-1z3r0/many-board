@@ -329,6 +329,17 @@
       }).join('');
     }
 
+    function fmtMmSs(secs) {
+      const s = Math.max(0, secs);
+      return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    }
+
+    function clockStr(g) {
+      if (g.half === 'final' || g.half === 'halftime') return g.half === 'final' ? 'Final' : 'Halftime';
+      const t = fmtMmSs(g.game_clock);
+      return `${t}${g.game_clock_running ? ' ▶' : ''}`;
+    }
+
     function renderFootballCard(g) {
       const isFinal = g.half === 'final';
       const dotClass = isFinal ? 'dot-final' : 'dot-active';
@@ -375,9 +386,10 @@
               </tr>
             </tbody>
           </table>
-          <div class="card-state">${downLabel} &amp; ${distLabel}</div>
+          <div class="card-state">${downLabel} &amp; ${distLabel} &nbsp;·&nbsp; ${clockStr(g)}</div>
           <div class="card-actions">
             <a href="/football.html?game=${g.id}&view=display" class="btn">Display</a>
+            <a href="/football.html?game=${g.id}&view=boxscore" class="btn">Box Score</a>
             <a href="/football.html?game=${g.id}&view=control" class="btn">Control</a>
             <a href="/football.html?game=${g.id}&view=gameclock" class="btn">Clock</a>
             <button class="btn btn-danger" onclick="deleteGame('football','${g.id}')">Delete</button>
