@@ -867,6 +867,16 @@
       </div>
     </div>
 
+    <!-- After TD — PAT (Ref view) -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">After TD — Point Attempt</div>
+      <div class="ctrl-row">
+        <button class="btn btn-state" id="ref-pat-1pt" onclick="setPAT('1pt')">1-Pt Attempt</button>
+        <button class="btn btn-state" id="ref-pat-2pt" onclick="setPAT('2pt')">2-Pt Attempt</button>
+        <button class="btn" onclick="setPAT(null)">Clear</button>
+      </div>
+    </div>
+
     <!-- Down & Distance -->
     <div class="ctrl-section">
       <div class="ctrl-header">Down &amp; Distance</div>
@@ -1144,6 +1154,9 @@
       if (gcBtn) gcBtn.textContent = state.game_clock_running ? 'Stop' : 'Start';
       const pcBtn = document.getElementById('ref-pc-btn');
       if (pcBtn) pcBtn.textContent = state.play_clock_running ? 'Stop' : 'Start';
+
+      document.getElementById('ref-pat-1pt')?.classList.toggle('active', state.pat === '1pt');
+      document.getElementById('ref-pat-2pt')?.classList.toggle('active', state.pat === '2pt');
 
       [1,2,3,4].forEach(d =>
         document.getElementById('ref-d' + d)?.classList.toggle('active', state.down === d)
