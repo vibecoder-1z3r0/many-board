@@ -32,7 +32,22 @@
     }
     .brand { font-size: 18px; font-weight: 700; color: #e94560; text-decoration: none; }
     .header-score { font-size: 13px; color: #888; font-family: monospace; }
-    .view-tabs { display: flex; margin-left: auto; }
+    .conn-status {
+      margin-left: auto;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .conn-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .conn-status.connected { color: #2ecc71; }
+    .conn-status.connected .conn-dot { background: #2ecc71; }
+    .conn-status.lost { color: #e94560; }
+    .conn-status.lost .conn-dot { background: #e94560; }
+    .view-tabs { display: flex; }
     .tab-btn {
       padding: 12px 18px; font-size: 13px; font-weight: 600; color: #888;
       border-bottom: 2px solid transparent; background: transparent;
@@ -297,6 +312,7 @@
       <button class="tab-btn" id="tab-boxscore" onclick="switchView('boxscore')">Box Score</button>
       <button class="tab-btn" id="tab-ump"      onclick="switchView('ump')">Ump</button>
     </nav>
+    <span id="conn-status" class="conn-status connected"><span class="conn-dot"></span>Connected</span>
   </header>
 
   <!-- ── BOX SCORE VIEW ────────────────────────────────── -->
@@ -489,13 +505,29 @@
     }
 
     // ── Polling ──────────────────────────────────────────
+    let failCount = 0;
+
+    function setConnStatus(ok) {
+      const el = document.getElementById('conn-status');
+      if (!el) return;
+      if (ok) {
+        el.className = 'conn-status connected';
+        el.innerHTML = '<span class="conn-dot"></span>Connected';
+      } else {
+        el.className = 'conn-status lost';
+        el.innerHTML = '<span class="conn-dot"></span>Signal Lost';
+      }
+    }
+
     async function poll() {
       try {
         const resp = await fetch('/api/baseball/games/' + gameId);
-        if (!resp.ok) return;
+        if (!resp.ok) { failCount++; if (failCount >= 3) setConnStatus(false); return; }
         state = await resp.json();
+        failCount = 0;
+        setConnStatus(true);
         render();
-      } catch (e) { /* network blip */ }
+      } catch (e) { failCount++; if (failCount >= 3) setConnStatus(false); }
     }
 
     // ── Render ───────────────────────────────────────────

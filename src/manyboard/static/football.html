@@ -40,7 +40,28 @@
       margin-left: 8px;
     }
 
-    .view-tabs { display: flex; margin-left: auto; }
+    .conn-status {
+      margin-left: auto;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .conn-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .conn-status.connected { color: #2ecc71; }
+    .conn-status.connected .conn-dot { background: #2ecc71; }
+    .conn-status.lost { color: #e94560; }
+    .conn-status.lost .conn-dot { background: #e94560; }
+
+    .view-tabs { display: flex; }
 
     .tab-btn {
       padding: 12px 18px;
@@ -423,6 +444,7 @@
       <button class="tab-btn" id="tab-gameclock" onclick="switchView('gameclock')">Game Clock</button>
       <button class="tab-btn" id="tab-playclock" onclick="switchView('playclock')">Play Clock</button>
     </nav>
+    <span id="conn-status" class="conn-status connected"><span class="conn-dot"></span>Connected</span>
   </header>
 
   <!-- ── DISPLAY VIEW — TV Scoreboard ─────────────────── -->
@@ -677,10 +699,7 @@
     const gameId = params.get('game');
     let view = params.get('view') || 'display';
     let state = null;
-    // Local interpolation values — always resynced from server on every poll.
-    // Never pushed back to server; server is source of truth.
-    let localGameClock = null;
-    let localPlayClock = null;
+    let failCount = 0;
 
     if (!gameId) { window.location.href = '/'; }
 
@@ -704,31 +723,28 @@
     }
 
     // ── Polling — server is source of truth ─────────────
+    function setConnStatus(ok) {
+      const el = document.getElementById('conn-status');
+      if (!el) return;
+      if (ok) {
+        el.className = 'conn-status connected';
+        el.innerHTML = '<span class="conn-dot"></span>Connected';
+      } else {
+        el.className = 'conn-status lost';
+        el.innerHTML = '<span class="conn-dot"></span>Signal Lost';
+      }
+    }
+
     async function poll() {
       try {
         const resp = await fetch('/api/football/games/' + gameId);
-        if (!resp.ok) return;
+        if (!resp.ok) { failCount++; if (failCount >= 3) setConnStatus(false); return; }
         state = await resp.json();
-        localGameClock = state.game_clock;
-        localPlayClock = state.play_clock;
+        failCount = 0;
+        setConnStatus(true);
         render();
-      } catch (e) { /* silent — network blip */ }
+      } catch (e) { failCount++; if (failCount >= 3) setConnStatus(false); }
     }
-
-    // ── Local interpolation between polls (display only) ─
-    setInterval(() => {
-      if (!state) return;
-      let changed = false;
-      if (state.game_clock_running && localGameClock > 0) {
-        localGameClock = Math.max(0, localGameClock - 1);
-        changed = true;
-      }
-      if (state.play_clock_running && localPlayClock > 0) {
-        localPlayClock = Math.max(0, localPlayClock - 1);
-        changed = true;
-      }
-      if (changed) renderClockElements();
-    }, 1000);
 
     // ── Render ───────────────────────────────────────────
     const HALF_LABEL = {
@@ -754,8 +770,8 @@
     }
 
     function renderClockElements() {
-      const gcVal = localGameClock ?? 0;
-      const pcVal = localPlayClock ?? 0;
+      const gcVal = state?.game_clock ?? 0;
+      const pcVal = state?.play_clock ?? 0;
       const gcRun = state?.game_clock_running ?? false;
       const pcRun = state?.play_clock_running ?? false;
 
@@ -917,8 +933,6 @@
       const resp = await fetch(`/api/football/games/${gameId}/${endpoint}`, opts);
       if (resp.ok) {
         state = await resp.json();
-        localGameClock = state.game_clock;
-        localPlayClock = state.play_clock;
         render();
       }
     }
