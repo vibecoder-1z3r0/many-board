@@ -25,8 +25,8 @@ phones/tablets at the field.
 # Install dependencies
 uv sync
 
-# Run dev server (hot-reload)
-uv run uvicorn manyboard.main:app --reload
+# Run dev server (hot-reload, timestamps in access log)
+uv run uvicorn manyboard.main:app --reload --log-config log_config.json
 
 # Run tests
 uv run pytest
