@@ -153,8 +153,8 @@
       align-items: center;
       justify-content: center;
       background: var(--bg);
-      padding: clamp(12px, 3vh, 32px) clamp(8px, 2vw, 20px);
-      gap: clamp(10px, 2.5vh, 24px);
+      padding: clamp(8px, 2vh, 24px) clamp(8px, 2vw, 20px);
+      gap: clamp(8px, 2vh, 20px);
     }
 
     .d-game-status {
@@ -176,7 +176,7 @@
     .d-teams-row {
       display: flex;
       align-items: center;
-      gap: clamp(16px, 5vw, 56px);
+      gap: clamp(12px, 5vw, 56px);
       width: 100%;
       max-width: 900px;
       justify-content: center;
@@ -186,13 +186,13 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: clamp(6px, 1.5vw, 14px);
+      gap: clamp(8px, 1.5vh, 16px);
       flex: 1;
       max-width: 300px;
     }
 
     .d-team-name {
-      font-size: clamp(18px, 4.5vw, 38px);
+      font-size: clamp(24px, 5vh, 44px);
       font-weight: 700;
       color: var(--text);
       text-transform: uppercase;
@@ -202,7 +202,7 @@
     .d-team-name.has-ball { color: var(--accent); }
 
     .d-team-score {
-      font-size: clamp(56px, 15vw, 120px);
+      font-size: clamp(88px, 20vh, 150px);
       font-weight: 700;
       color: var(--text-bright);
       font-family: 'Orbitron', monospace;
@@ -227,7 +227,7 @@
 
     .d-clock-wrap {
       display: flex;
-      gap: clamp(20px, 5vw, 56px);
+      gap: clamp(24px, 6vw, 64px);
       align-items: flex-end;
     }
     .d-single-clock {
@@ -237,7 +237,7 @@
       gap: 4px;
     }
     .d-clock-value {
-      font-size: clamp(32px, 7vw, 68px);
+      font-size: clamp(44px, 9vh, 80px);
       font-weight: 700;
       color: var(--text-bright);
       font-family: 'Orbitron', monospace;
@@ -281,14 +281,14 @@
     }
     .d-box-table th.team-col { text-align: left; min-width: 120px; }
     .d-box-table td {
-      font-size: clamp(16px, 3.5vw, 32px);
+      font-size: clamp(20px, 4vh, 36px);
       font-weight: 700;
       color: var(--text-dim);
       text-align: center;
-      padding: clamp(6px, 1.5vw, 12px) clamp(6px, 1.5vw, 14px);
+      padding: clamp(6px, 1vh, 12px) clamp(6px, 1.5vw, 14px);
     }
     .d-box-table td.team-col {
-      font-size: clamp(13px, 2.5vw, 26px);
+      font-size: clamp(16px, 3vh, 28px);
       font-weight: 700;
       color: var(--text);
       text-align: left;
@@ -297,9 +297,9 @@
     }
     .d-box-table td.team-col.has-ball { color: var(--accent); }
     .d-box-table td.total-col {
-      font-size: clamp(28px, 6vw, 60px);
+      font-size: clamp(44px, 10vh, 72px);
       color: var(--text-bright);
-      padding: clamp(6px, 1.5vw, 12px) clamp(10px, 2.5vw, 22px);
+      padding: clamp(6px, 1vh, 12px) clamp(10px, 2vw, 22px);
       border-left: 1px solid var(--border-dark);
     }
     .d-box-table td.active-col { color: var(--highlight); }
@@ -468,7 +468,7 @@
     }
 
     .clock-big {
-      font-size: clamp(72px, 22vw, 200px);
+      font-size: clamp(110px, 30vh, 240px);
       font-weight: 700;
       color: var(--text-bright);
       font-family: 'Orbitron', monospace;
