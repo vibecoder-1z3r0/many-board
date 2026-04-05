@@ -57,8 +57,8 @@ class TeamNamesUpdate(BaseModel):
     away_team: str | None = None
 
 
-class PlayClockSet(BaseModel):
-    """Set clock to a specific value (stops the clock)."""
+class ClockSet(BaseModel):
+    """Set a clock to a specific value (stops it)."""
 
     seconds: Annotated[int, Field(ge=0)]
 
@@ -86,8 +86,16 @@ def _save(game: FootballGame, session: Session) -> FootballGame:
     return game
 
 
-def _computed_clock(game: FootballGame) -> int:
-    """Current remaining seconds, accounting for elapsed time if running."""
+def _computed_game_clock(game: FootballGame) -> int:
+    """Current remaining game clock seconds, accounting for elapsed time if running."""
+    if not game.game_clock_running or game.game_clock_started_at is None:
+        return game.game_clock
+    elapsed = (_now() - game.game_clock_started_at).total_seconds()
+    return max(0, game.game_clock - int(elapsed))
+
+
+def _computed_play_clock(game: FootballGame) -> int:
+    """Current remaining play clock seconds, accounting for elapsed time if running."""
     if not game.play_clock_running or game.play_clock_started_at is None:
         return game.play_clock
     elapsed = (_now() - game.play_clock_started_at).total_seconds()
@@ -96,7 +104,8 @@ def _computed_clock(game: FootballGame) -> int:
 
 def _to_read(game: FootballGame) -> FootballGameRead:
     data = game.model_dump()
-    data["play_clock"] = _computed_clock(game)
+    data["game_clock"] = _computed_game_clock(game)
+    data["play_clock"] = _computed_play_clock(game)
     return FootballGameRead.model_validate(data)
 
 
@@ -110,6 +119,8 @@ def create_game(data: FootballGameCreate, session: SessionDep) -> FootballGameRe
         away_team=data.away_team,
         home_timeouts=data.home_timeouts,
         away_timeouts=data.away_timeouts,
+        game_clock_default=data.game_clock,
+        game_clock=data.game_clock,
         play_clock_default=data.play_clock,
         play_clock=data.play_clock,
     )
@@ -128,11 +139,20 @@ def list_games(session: SessionDep) -> list[FootballGameRead]:
 def get_game(game_id: str, session: SessionDep) -> FootballGameRead:
     game = _get_game(game_id, session)
     read = _to_read(game)
-    # Auto-stop in DB if clock expired while running
+    dirty = False
+    # Auto-stop game clock in DB if it expired while running
+    if game.game_clock_running and read.game_clock == 0:
+        game.game_clock = 0
+        game.game_clock_running = False
+        game.game_clock_started_at = None
+        dirty = True
+    # Auto-stop play clock in DB if it expired while running
     if game.play_clock_running and read.play_clock == 0:
         game.play_clock = 0
         game.play_clock_running = False
         game.play_clock_started_at = None
+        dirty = True
+    if dirty:
         _save(game, session)
     return read
 
@@ -249,9 +269,54 @@ def update_half(
     return _to_read(_save(game, session))
 
 
+@router.patch("/{game_id}/game-clock")
+def set_game_clock(
+    game_id: str, update: ClockSet, session: SessionDep
+) -> FootballGameRead:
+    """Set game clock to a specific value and stop it."""
+    game = _get_game(game_id, session)
+    game.game_clock = update.seconds
+    game.game_clock_running = False
+    game.game_clock_started_at = None
+    return _to_read(_save(game, session))
+
+
+@router.patch("/{game_id}/game-clock/reset")
+def reset_game_clock(game_id: str, session: SessionDep) -> FootballGameRead:
+    """Reset game clock to configured default and stop it."""
+    game = _get_game(game_id, session)
+    game.game_clock = game.game_clock_default
+    game.game_clock_running = False
+    game.game_clock_started_at = None
+    return _to_read(_save(game, session))
+
+
+@router.patch("/{game_id}/game-clock/start")
+def start_game_clock(game_id: str, session: SessionDep) -> FootballGameRead:
+    """Start the game clock countdown from current remaining seconds."""
+    game = _get_game(game_id, session)
+    if game.game_clock <= 0:
+        raise HTTPException(status_code=400, detail="Game clock is already at zero")
+    if not game.game_clock_running:
+        game.game_clock_running = True
+        game.game_clock_started_at = _now()
+    return _to_read(_save(game, session))
+
+
+@router.patch("/{game_id}/game-clock/stop")
+def stop_game_clock(game_id: str, session: SessionDep) -> FootballGameRead:
+    """Stop the game clock and persist current remaining seconds."""
+    game = _get_game(game_id, session)
+    if game.game_clock_running:
+        game.game_clock = _computed_game_clock(game)
+        game.game_clock_running = False
+        game.game_clock_started_at = None
+    return _to_read(_save(game, session))
+
+
 @router.patch("/{game_id}/play-clock")
 def set_play_clock(
-    game_id: str, update: PlayClockSet, session: SessionDep
+    game_id: str, update: ClockSet, session: SessionDep
 ) -> FootballGameRead:
     """Set clock to a specific value and stop it."""
     game = _get_game(game_id, session)
@@ -288,7 +353,7 @@ def stop_play_clock(game_id: str, session: SessionDep) -> FootballGameRead:
     """Stop the clock and persist current remaining seconds."""
     game = _get_game(game_id, session)
     if game.play_clock_running:
-        game.play_clock = _computed_clock(game)
+        game.play_clock = _computed_play_clock(game)
         game.play_clock_running = False
         game.play_clock_started_at = None
     return _to_read(_save(game, session))

@@ -336,9 +336,9 @@
     .ctrl-dot.used { background: #333; }
 
     /* ════════════════════════════════════════════════════════
-       CLOCK VIEW — Fullscreen play clock
+       FULLSCREEN CLOCK VIEWS (game clock + play clock)
     ════════════════════════════════════════════════════════ */
-    #view-clock {
+    #view-gameclock, #view-playclock {
       flex-direction: column;
       align-items: center;
       justify-content: center;
@@ -347,7 +347,7 @@
     }
 
     .clock-big {
-      font-size: 200px;
+      font-size: 180px;
       font-weight: 700;
       color: #fff;
       font-family: monospace;
@@ -363,7 +363,7 @@
       letter-spacing: 2px;
     }
 
-    .clock-half-label {
+    .clock-label {
       font-size: 16px;
       color: #555;
       text-transform: uppercase;
@@ -377,9 +377,10 @@
     <a href="/" class="brand">MANY BOARD</a>
     <span class="header-score" id="header-score"></span>
     <nav class="view-tabs">
-      <button class="tab-btn" id="tab-display" onclick="switchView('display')">Display</button>
-      <button class="tab-btn" id="tab-control" onclick="switchView('control')">Control</button>
-      <button class="tab-btn" id="tab-clock"   onclick="switchView('clock')">Clock</button>
+      <button class="tab-btn" id="tab-display"    onclick="switchView('display')">Display</button>
+      <button class="tab-btn" id="tab-control"    onclick="switchView('control')">Control</button>
+      <button class="tab-btn" id="tab-gameclock"  onclick="switchView('gameclock')">Game Clock</button>
+      <button class="tab-btn" id="tab-playclock"  onclick="switchView('playclock')">Play Clock</button>
     </nav>
   </header>
 
@@ -407,9 +408,15 @@
       </div>
     </div>
 
-    <div class="d-clock-wrap">
-      <div class="d-clock-value" id="d-clock"></div>
-      <div class="d-clock-label">play clock</div>
+    <div style="display:flex;gap:48px;align-items:flex-end">
+      <div class="d-clock-wrap">
+        <div class="d-clock-value" id="d-game-clock" style="font-size:80px"></div>
+        <div class="d-clock-label">game clock</div>
+      </div>
+      <div class="d-clock-wrap">
+        <div class="d-clock-value" id="d-play-clock"></div>
+        <div class="d-clock-label">play clock</div>
+      </div>
     </div>
 
     <div class="d-nrz-badge" id="d-nrz" style="display:none">NO RUN ZONE</div>
@@ -496,13 +503,23 @@
       </div>
     </div>
 
+    <!-- Game Clock -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">Game Clock</div>
+      <div class="ctrl-clock-display" id="c-game-clock-display"></div>
+      <div class="ctrl-row">
+        <button class="btn-primary" id="game-clock-toggle-btn" onclick="toggleGameClock()">Start</button>
+        <button class="btn" onclick="resetGameClock()">Reset</button>
+      </div>
+    </div>
+
     <!-- Play Clock -->
     <div class="ctrl-section">
       <div class="ctrl-header">Play Clock</div>
-      <div class="ctrl-clock-display" id="c-clock-display"></div>
+      <div class="ctrl-clock-display" id="c-play-clock-display"></div>
       <div class="ctrl-row">
-        <button class="btn-primary" id="clock-toggle-btn" onclick="toggleClock()">Start</button>
-        <button class="btn" onclick="resetClock()">Reset</button>
+        <button class="btn-primary" id="play-clock-toggle-btn" onclick="togglePlayClock()">Start</button>
+        <button class="btn" onclick="resetPlayClock()">Reset</button>
       </div>
     </div>
 
@@ -516,24 +533,38 @@
 
   </div>
 
-  <!-- ── CLOCK VIEW ────────────────────────────────────── -->
-  <div class="view" id="view-clock">
-    <div class="clock-teams" id="ck-teams"></div>
-    <div class="clock-big" id="ck-clock"></div>
-    <div class="clock-half-label" id="ck-half"></div>
+  <!-- ── GAME CLOCK VIEW ──────────────────────────────── -->
+  <div class="view" id="view-gameclock">
+    <div class="clock-teams" id="gck-teams"></div>
+    <div class="clock-big" id="gck-clock"></div>
+    <div class="clock-label" id="gck-half"></div>
+  </div>
+
+  <!-- ── PLAY CLOCK VIEW ──────────────────────────────── -->
+  <div class="view" id="view-playclock">
+    <div class="clock-teams" id="pck-teams"></div>
+    <div class="clock-big" id="pck-clock"></div>
+    <div class="clock-label">PLAY CLOCK</div>
   </div>
 
   <script>
     // ── State ────────────────────────────────────────────
     const params = new URLSearchParams(window.location.search);
     const gameId = params.get('game');
-    let view     = params.get('view') || 'display';
-    let state    = null;
-    // localClock: client-side interpolation value for smooth display.
-    // Always resynced from server on every poll. Never pushed to server.
-    let localClock = null;
+    let view = params.get('view') || 'display';
+    let state = null;
+    // Local interpolation values — always resynced from server on every poll.
+    // Never pushed back to server; server is source of truth.
+    let localGameClock = null;
+    let localPlayClock = null;
 
     if (!gameId) { window.location.href = '/'; }
+
+    // ── Helpers ──────────────────────────────────────────
+    function fmtMmSs(secs) {
+      const s = Math.max(0, secs);
+      return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    }
 
     // ── View switching ───────────────────────────────────
     function switchView(v) {
@@ -554,31 +585,35 @@
         const resp = await fetch('/api/football/games/' + gameId);
         if (!resp.ok) return;
         state = await resp.json();
-        // Always resync local display clock from server's computed value
-        localClock = state.play_clock;
+        localGameClock = state.game_clock;
+        localPlayClock = state.play_clock;
         render();
-      } catch (e) {
-        // silent — network blip
-      }
+      } catch (e) { /* silent — network blip */ }
     }
 
     // ── Local interpolation between polls (display only) ─
-    // Decrements localClock every second when running, for smooth display.
-    // The next poll will resync it to the authoritative server value.
     setInterval(() => {
-      if (state?.play_clock_running && localClock !== null && localClock > 0) {
-        localClock = Math.max(0, localClock - 1);
-        renderClockElements();
+      if (!state) return;
+      let changed = false;
+      if (state.game_clock_running && localGameClock > 0) {
+        localGameClock = Math.max(0, localGameClock - 1);
+        changed = true;
       }
+      if (state.play_clock_running && localPlayClock > 0) {
+        localPlayClock = Math.max(0, localPlayClock - 1);
+        changed = true;
+      }
+      if (changed) renderClockElements();
     }, 1000);
 
     // ── Render ───────────────────────────────────────────
     function render() {
       if (!state) return;
       renderHeader();
-      if (view === 'display') renderDisplay();
-      else if (view === 'control') renderControl();
-      else if (view === 'clock') renderClock();
+      if (view === 'display')    renderDisplay();
+      else if (view === 'control')    renderControl();
+      else if (view === 'gameclock')  renderGameClockView();
+      else if (view === 'playclock')  renderPlayClockView();
     }
 
     function renderHeader() {
@@ -587,17 +622,37 @@
     }
 
     function renderClockElements() {
-      const val = localClock ?? 0;
-      const running = state?.play_clock_running ?? false;
-      setText('d-clock', val);
-      setText('c-clock-display', val);
-      setText('ck-clock', val);
-      document.getElementById('d-clock')?.classList.toggle('running', running);
-      document.getElementById('c-clock-display')?.classList.toggle('running', running);
-      const ckEl = document.getElementById('ck-clock');
-      if (ckEl) {
-        ckEl.classList.toggle('running', running);
-        ckEl.classList.toggle('expired', val === 0);
+      const gcVal = localGameClock ?? 0;
+      const pcVal = localPlayClock ?? 0;
+      const gcRun = state?.game_clock_running ?? false;
+      const pcRun = state?.play_clock_running ?? false;
+
+      // Display view
+      setText('d-game-clock', fmtMmSs(gcVal));
+      setText('d-play-clock', pcVal);
+      document.getElementById('d-game-clock')?.classList.toggle('running', gcRun);
+      document.getElementById('d-play-clock')?.classList.toggle('running', pcRun);
+
+      // Control view
+      setText('c-game-clock-display', fmtMmSs(gcVal));
+      setText('c-play-clock-display', pcVal);
+      document.getElementById('c-game-clock-display')?.classList.toggle('running', gcRun);
+      document.getElementById('c-play-clock-display')?.classList.toggle('running', pcRun);
+
+      // Game clock fullscreen view
+      const gckEl = document.getElementById('gck-clock');
+      if (gckEl) {
+        gckEl.textContent = fmtMmSs(gcVal);
+        gckEl.classList.toggle('running', gcRun);
+        gckEl.classList.toggle('expired', gcVal === 0);
+      }
+
+      // Play clock fullscreen view
+      const pckEl = document.getElementById('pck-clock');
+      if (pckEl) {
+        pckEl.textContent = pcVal;
+        pckEl.classList.toggle('running', pcRun);
+        pckEl.classList.toggle('expired', pcVal === 0);
       }
     }
 
@@ -651,17 +706,24 @@
       );
 
       renderClockElements();
-      const toggleBtn = document.getElementById('clock-toggle-btn');
-      if (toggleBtn) toggleBtn.textContent = state.play_clock_running ? 'Stop' : 'Start';
+      const gcBtn = document.getElementById('game-clock-toggle-btn');
+      if (gcBtn) gcBtn.textContent = state.game_clock_running ? 'Stop' : 'Start';
+      const pcBtn = document.getElementById('play-clock-toggle-btn');
+      if (pcBtn) pcBtn.textContent = state.play_clock_running ? 'Stop' : 'Start';
 
       document.getElementById('nrz-btn')?.classList.toggle('active', state.no_run_zone);
     }
 
-    function renderClock() {
+    function renderGameClockView() {
       const halfMap = { first:'1st Half', halftime:'Halftime', second:'2nd Half', final:'Final' };
       renderClockElements();
-      setText('ck-teams', `${state.home_team} ${state.home_score} – ${state.away_score} ${state.away_team}`);
-      setText('ck-half', halfMap[state.half] || state.half);
+      setText('gck-teams', `${state.home_team} ${state.home_score} – ${state.away_score} ${state.away_team}`);
+      setText('gck-half', halfMap[state.half] || state.half);
+    }
+
+    function renderPlayClockView() {
+      renderClockElements();
+      setText('pck-teams', `${state.home_team} ${state.home_score} – ${state.away_score} ${state.away_team}`);
     }
 
     // ── API helpers ──────────────────────────────────────
@@ -674,7 +736,8 @@
       const resp = await fetch(`/api/football/games/${gameId}/${endpoint}`, opts);
       if (resp.ok) {
         state = await resp.json();
-        localClock = state.play_clock;
+        localGameClock = state.game_clock;
+        localPlayClock = state.play_clock;
         render();
       }
     }
@@ -689,14 +752,17 @@
     async function setHalf(h)                { await patch('half', { half: h }); }
     async function toggleNRZ()               { if (state) await patch('no-run-zone', { enabled: !state.no_run_zone }); }
 
-    async function toggleClock() {
+    async function toggleGameClock() {
+      if (!state) return;
+      await patch(state.game_clock_running ? 'game-clock/stop' : 'game-clock/start');
+    }
+    async function resetGameClock() { await patch('game-clock/reset'); }
+
+    async function togglePlayClock() {
       if (!state) return;
       await patch(state.play_clock_running ? 'play-clock/stop' : 'play-clock/start');
     }
-
-    async function resetClock() {
-      await patch('play-clock/reset');
-    }
+    async function resetPlayClock() { await patch('play-clock/reset'); }
 
     // ── DOM helpers ──────────────────────────────────────
     function setText(id, val) {

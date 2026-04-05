@@ -330,6 +330,88 @@ def test_updated_at_changes_on_update(client: TestClient) -> None:
 # ── Delete ───────────────────────────────────────────────────────────────────
 
 
+# ── Game Clock ───────────────────────────────────────────────────────────────
+
+
+def test_game_created_with_default_game_clock(client: TestClient) -> None:
+    game_id = _new_game(client)
+    data = client.get(f"/api/football/games/{game_id}").json()
+    assert data["game_clock"] == 1200
+    assert data["game_clock_default"] == 1200
+    assert data["game_clock_running"] is False
+
+
+def test_game_created_with_custom_game_clock(client: TestClient) -> None:
+    resp = client.post(
+        "/api/football/games",
+        json={"home_team": "A", "away_team": "B", "game_clock": 600},
+    )
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["game_clock"] == 600
+    assert data["game_clock_default"] == 600
+
+
+def test_start_game_clock(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(f"/api/football/games/{game_id}/game-clock/start")
+    assert resp.status_code == 200
+    assert resp.json()["game_clock_running"] is True
+
+
+def test_stop_game_clock(client: TestClient) -> None:
+    import time
+
+    game_id = _new_game(client)
+    client.patch(f"/api/football/games/{game_id}/game-clock/start")
+    time.sleep(1.1)
+    resp = client.patch(f"/api/football/games/{game_id}/game-clock/stop")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["game_clock_running"] is False
+    assert data["game_clock"] <= 1199
+
+
+def test_reset_game_clock(client: TestClient) -> None:
+    game_id = _new_game(client)
+    client.patch(f"/api/football/games/{game_id}/game-clock", json={"seconds": 100})
+    resp = client.patch(f"/api/football/games/{game_id}/game-clock/reset")
+    assert resp.status_code == 200
+    assert resp.json()["game_clock"] == 1200
+    assert resp.json()["game_clock_running"] is False
+
+
+def test_set_game_clock(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(
+        f"/api/football/games/{game_id}/game-clock", json={"seconds": 300}
+    )
+    assert resp.status_code == 200
+    assert resp.json()["game_clock"] == 300
+    assert resp.json()["game_clock_running"] is False
+
+
+def test_start_game_clock_at_zero_rejected(client: TestClient) -> None:
+    game_id = _new_game(client)
+    client.patch(f"/api/football/games/{game_id}/game-clock", json={"seconds": 0})
+    resp = client.patch(f"/api/football/games/{game_id}/game-clock/start")
+    assert resp.status_code == 400
+
+
+def test_get_computes_game_clock_while_running(client: TestClient) -> None:
+    import time
+
+    game_id = _new_game(client)
+    client.patch(f"/api/football/games/{game_id}/game-clock/start")
+    time.sleep(1.1)
+    resp = client.get(f"/api/football/games/{game_id}")
+    assert resp.status_code == 200
+    assert resp.json()["game_clock"] <= 1199
+
+
+# ── Delete ───────────────────────────────────────────────────────────────────
+
+
 def test_delete_football_game(client: TestClient) -> None:
     game_id = _new_game(client)
     resp = client.delete(f"/api/football/games/{game_id}")

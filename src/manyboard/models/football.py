@@ -50,6 +50,11 @@ class FootballGame(SQLModel, table=True):
     possession: Possession = Field(default=Possession.HOME)
     home_timeouts: int = Field(default=3, ge=0)
     away_timeouts: int = Field(default=3, ge=0)
+    # game_clock: half countdown timer (seconds), default 20 min
+    game_clock_default: int = Field(default=1200, ge=1)
+    game_clock: int = Field(default=1200, ge=0)
+    game_clock_running: bool = Field(default=False)
+    game_clock_started_at: datetime | None = Field(default=None)
     # play_clock_default: configured duration, used for reset
     play_clock_default: int = Field(default=40, ge=1)
     # play_clock: remaining seconds as of play_clock_started_at (or now, if stopped)
@@ -67,11 +72,12 @@ class FootballGameCreate(SQLModel):
     away_team: str = "Away"
     home_timeouts: int = Field(default=3, ge=0)
     away_timeouts: int = Field(default=3, ge=0)
+    game_clock: int = Field(default=1200, ge=1)
     play_clock: int = Field(default=40, ge=1)
 
 
 class FootballGameRead(SQLModel):
-    """Response schema — exposes computed play_clock, hides started_at."""
+    """Response schema — exposes computed clocks, hides started_at fields."""
 
     id: str
     home_team: str
@@ -84,6 +90,9 @@ class FootballGameRead(SQLModel):
     possession: Possession
     home_timeouts: int
     away_timeouts: int
+    game_clock_default: int
+    game_clock: int  # current computed value
+    game_clock_running: bool
     play_clock_default: int
     play_clock: int  # current computed value
     play_clock_running: bool
