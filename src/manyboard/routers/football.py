@@ -1,5 +1,6 @@
 """Football game API router."""
 
+import json
 from datetime import UTC, datetime
 from typing import Annotated
 
@@ -15,6 +16,7 @@ from manyboard.models.football import (
     FootballGameCreate,
     FootballGameRead,
     Half,
+    HalfScores,
     Possession,
 )
 
@@ -52,6 +54,12 @@ class HalfUpdate(BaseModel):
     half: Half
 
 
+class HalfScoreUpdate(BaseModel):
+    half: Half  # first | second | ot
+    team: str   # "home" or "away"
+    points: int
+
+
 class TeamNamesUpdate(BaseModel):
     home_team: str | None = None
     away_team: str | None = None
@@ -86,6 +94,31 @@ def _save(game: FootballGame, session: Session) -> FootballGame:
     return game
 
 
+_HALF_IDX: dict[str, int] = {"first": 0, "second": 1, "ot": 2}
+
+
+def _get_half_scores(game: FootballGame) -> HalfScores:
+    return json.loads(game.half_scores_json)  # type: ignore[no-any-return]
+
+
+def _set_half_scores(game: FootballGame, scores: HalfScores) -> None:
+    game.half_scores_json = json.dumps(scores)
+
+
+def _snapshot_half(game: FootballGame, half_key: str) -> None:
+    """Record points scored IN the given half based on running totals."""
+    idx = _HALF_IDX.get(half_key)
+    if idx is None:
+        return
+    scores = _get_half_scores(game)
+    # Points in this half = total minus sum of previous halves
+    prev_away = sum(v for v in scores["away"][:idx] if v is not None)
+    prev_home = sum(v for v in scores["home"][:idx] if v is not None)
+    scores["away"][idx] = game.away_score - prev_away
+    scores["home"][idx] = game.home_score - prev_home
+    _set_half_scores(game, scores)
+
+
 def _computed_game_clock(game: FootballGame) -> int:
     """Current remaining game clock seconds, accounting for elapsed time if running."""
     if not game.game_clock_running or game.game_clock_started_at is None:
@@ -106,6 +139,7 @@ def _to_read(game: FootballGame) -> FootballGameRead:
     data = game.model_dump()
     data["game_clock"] = _computed_game_clock(game)
     data["play_clock"] = _computed_play_clock(game)
+    data["half_scores"] = _get_half_scores(game)
     return FootballGameRead.model_validate(data)
 
 
@@ -265,7 +299,31 @@ def update_half(
     game_id: str, update: HalfUpdate, session: SessionDep
 ) -> FootballGameRead:
     game = _get_game(game_id, session)
+    prev = game.half
     game.half = update.half
+    # Snapshot points scored when a scoring half ends
+    if prev == Half.FIRST and update.half == Half.HALFTIME:
+        _snapshot_half(game, "first")
+    elif prev == Half.SECOND and update.half in (Half.FINAL, Half.OT):
+        _snapshot_half(game, "second")
+    elif prev == Half.OT and update.half == Half.FINAL:
+        _snapshot_half(game, "ot")
+    return _to_read(_save(game, session))
+
+
+@router.patch("/{game_id}/half-score")
+def set_half_score(
+    game_id: str, update: HalfScoreUpdate, session: SessionDep
+) -> FootballGameRead:
+    """Manually correct a half's score (e.g. after the fact)."""
+    if update.half not in (Half.FIRST, Half.SECOND, Half.OT):
+        raise HTTPException(status_code=422, detail="half must be first, second, or ot")
+    if update.team not in ("home", "away"):
+        raise HTTPException(status_code=422, detail="team must be 'home' or 'away'")
+    game = _get_game(game_id, session)
+    scores = _get_half_scores(game)
+    scores[update.team][_HALF_IDX[update.half]] = update.points
+    _set_half_scores(game, scores)
     return _to_read(_save(game, session))
 
 

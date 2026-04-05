@@ -61,39 +61,72 @@
       color: #555;
       text-transform: uppercase;
       letter-spacing: 1px;
-      margin-bottom: 4px;
-    }
-
-    .card-teams { font-size: 14px; font-weight: 700; color: #4fc3f7; margin-bottom: 8px; }
-
-    .card-score {
-      font-size: 28px;
-      font-weight: 700;
-      color: #fff;
-      font-family: monospace;
       margin-bottom: 8px;
-    }
-
-    .card-state {
-      font-size: 11px;
-      color: #888;
-      margin-bottom: 12px;
       display: flex;
       align-items: center;
       gap: 8px;
     }
 
     .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      display: inline-block;
-      flex-shrink: 0;
+      width: 7px; height: 7px; border-radius: 50%;
+      display: inline-block; flex-shrink: 0;
     }
     .dot-active { background: #3498db; animation: pulse 1s ease-in-out infinite; }
     .dot-final  { background: #666; }
 
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    /* Mini box score table */
+    .box-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: monospace;
+      margin-bottom: 10px;
+    }
+    .box-table th {
+      font-size: 10px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-align: center;
+      padding: 3px 6px;
+      border-bottom: 1px solid #2a2a3e;
+    }
+    .box-table th.team-h { text-align: left; }
+    .box-table td {
+      font-size: 15px;
+      font-weight: 700;
+      color: #888;
+      text-align: center;
+      padding: 5px 6px;
+    }
+    .box-table td.team-h {
+      font-size: 13px;
+      font-weight: 700;
+      color: #e0e0e0;
+      text-align: left;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      max-width: 90px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .box-table td.team-h.poss { color: #e94560; }
+    .box-table td.total-h {
+      font-size: 22px;
+      color: #fff;
+      border-left: 1px solid #2a2a3e;
+      padding: 5px 10px;
+    }
+    .box-table td.active-h { color: #4fc3f7; }
+    .box-table td.empty-h  { color: #2a2a3e; }
+
+    .card-state {
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 10px;
+    }
 
     .card-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
@@ -299,22 +332,54 @@
     function renderFootballCard(g) {
       const isFinal = g.half === 'final';
       const dotClass = isFinal ? 'dot-final' : 'dot-active';
-      const halfLabel = { first: '1st Half', halftime: 'Halftime', second: '2nd Half', final: 'Final' }[g.half] || g.half;
-      const downLabel = ['', '1st', '2nd', '3rd', '4th'][g.down] || g.down;
-      const distLabel = { midfield: 'Midfield', goal: 'Goal' }[g.distance] || g.distance;
+      const halfLabel = {
+        first:'1st Half', halftime:'Halftime', second:'2nd Half',
+        ot:'Overtime', final:'Final'
+      }[g.half] || g.half;
+      const downLabel = ['','1st','2nd','3rd','4th'][g.down] || g.down;
+      const distLabel = { midfield:'Midfield', goal:'Goal' }[g.distance] || g.distance;
+      const hs = g.half_scores || { away:[null,null,null], home:[null,null,null] };
+      const showOT = hs.away[2] !== null || hs.home[2] !== null || g.half === 'ot';
+      const activeIdx = { first:0, second:1, ot:2 }[g.half];
+      const cols = [0, 1, ...(showOT ? [2] : [])];
+      const colHeaders = ['1H','2H','OT'];
+
+      function fbCell(team, idx) {
+        const v = hs[team][idx];
+        const cls = v === null ? (idx === activeIdx ? 'active-h' : 'empty-h') : '';
+        return `<td class="${cls}">${v === null ? (idx === activeIdx ? '—' : '') : v}</td>`;
+      }
+
       return `
         <div class="card">
-          <div class="card-sport">Flag Football</div>
-          <div class="card-teams">${esc(g.home_team)} vs ${esc(g.away_team)}</div>
-          <div class="card-score">${g.home_score} &mdash; ${g.away_score}</div>
-          <div class="card-state">
+          <div class="card-sport">
             <span class="status-dot ${dotClass}"></span>
-            ${halfLabel} &nbsp;&bull;&nbsp; ${downLabel} &amp; ${distLabel}
+            Flag Football &nbsp;·&nbsp; ${halfLabel}
           </div>
+          <table class="box-table">
+            <thead><tr>
+              <th class="team-h"></th>
+              ${cols.map(i => `<th>${colHeaders[i]}</th>`).join('')}
+              <th style="border-left:1px solid #2a2a3e">T</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td class="team-h${g.possession==='away'?' poss':''}">${esc(g.away_team)}</td>
+                ${cols.map(i => fbCell('away', i)).join('')}
+                <td class="total-h">${g.away_score}</td>
+              </tr>
+              <tr>
+                <td class="team-h${g.possession==='home'?' poss':''}">${esc(g.home_team)}</td>
+                ${cols.map(i => fbCell('home', i)).join('')}
+                <td class="total-h">${g.home_score}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="card-state">${downLabel} &amp; ${distLabel}</div>
           <div class="card-actions">
             <a href="/football.html?game=${g.id}&view=display" class="btn">Display</a>
             <a href="/football.html?game=${g.id}&view=control" class="btn">Control</a>
-            <a href="/football.html?game=${g.id}&view=clock" class="btn">Clock</a>
+            <a href="/football.html?game=${g.id}&view=gameclock" class="btn">Clock</a>
             <button class="btn btn-danger" onclick="deleteGame('football','${g.id}')">Delete</button>
           </div>
         </div>`;
@@ -323,19 +388,46 @@
     function renderBaseballCard(g) {
       const isFinal = g.status === 'final';
       const dotClass = isFinal ? 'dot-final' : 'dot-active';
-      const halfLabel = g.half === 'top' ? '▲' : '▼';
-      const ordinal = ['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th'];
+      const arrow = g.half === 'top' ? '▲' : '▼';
+      const ordinal = ['','1st','2nd','3rd','4th','5th','6th','7th','8th','9th'];
       const innLabel = ordinal[g.current_inning] || `${g.current_inning}th`;
-      const stateLabel = isFinal ? 'Final' : `${halfLabel} ${innLabel}`;
+      const stateLabel = isFinal ? 'Final' : `${arrow} ${innLabel} · B:${g.balls} S:${g.strikes} O:${g.outs}`;
+      const scores = g.scores || { away: [], home: [] };
+      const numCols = scores.away.length;
+      const activeIdx = g.current_inning - 1;
+
+      function bbCell(team, idx) {
+        const v = scores[team][idx];
+        const isCurrent = idx === activeIdx && !isFinal;
+        const cls = v === null ? (isCurrent ? 'active-h' : 'empty-h') : '';
+        return `<td class="${cls}">${v === null ? (isCurrent ? '—' : '') : v}</td>`;
+      }
+
       return `
         <div class="card">
-          <div class="card-sport">Baseball / Wiffleball</div>
-          <div class="card-teams">${esc(g.away_team)} vs ${esc(g.home_team)}</div>
-          <div class="card-score">${g.away_total} &mdash; ${g.home_total}</div>
-          <div class="card-state">
+          <div class="card-sport">
             <span class="status-dot ${dotClass}"></span>
-            ${stateLabel} &nbsp;&bull;&nbsp; B:${g.balls} S:${g.strikes} O:${g.outs}
+            Baseball / Wiffleball &nbsp;·&nbsp; ${stateLabel}
           </div>
+          <table class="box-table">
+            <thead><tr>
+              <th class="team-h"></th>
+              ${Array.from({length: numCols}, (_, i) => `<th>${i+1}</th>`).join('')}
+              <th style="border-left:1px solid #2a2a3e">R</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td class="team-h">${esc(g.away_team)}</td>
+                ${Array.from({length: numCols}, (_, i) => bbCell('away', i)).join('')}
+                <td class="total-h">${g.away_total}</td>
+              </tr>
+              <tr>
+                <td class="team-h">${esc(g.home_team)}</td>
+                ${Array.from({length: numCols}, (_, i) => bbCell('home', i)).join('')}
+                <td class="total-h">${g.home_total}</td>
+              </tr>
+            </tbody>
+          </table>
           <div class="card-actions">
             <a href="/baseball.html?game=${g.id}&view=boxscore" class="btn">Box Score</a>
             <a href="/baseball.html?game=${g.id}&view=ump" class="btn">Ump</a>

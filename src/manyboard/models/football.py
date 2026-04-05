@@ -1,5 +1,6 @@
 """Football game state models."""
 
+import json
 import uuid
 from datetime import UTC, datetime
 from enum import Enum, StrEnum
@@ -12,10 +13,16 @@ def _utcnow() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
 
 
+def _default_half_scores() -> str:
+    # [1H, 2H, OT] — null = not yet played, int = finalized
+    return json.dumps({"away": [None, None, None], "home": [None, None, None]})
+
+
 class Half(StrEnum):
     FIRST = "first"
     HALFTIME = "halftime"
     SECOND = "second"
+    OT = "ot"
     FINAL = "final"
 
 
@@ -36,6 +43,10 @@ class Possession(StrEnum):
     AWAY = "away"
 
 
+# HalfScores[team] = [1H, 2H, OT], each int | None
+HalfScores = dict[str, list[int | None]]
+
+
 class FootballGame(SQLModel, table=True):
     __tablename__ = "football_games"
 
@@ -45,6 +56,8 @@ class FootballGame(SQLModel, table=True):
     home_score: int = Field(default=0, ge=0)
     away_score: int = Field(default=0, ge=0)
     half: Half = Field(default=Half.FIRST)
+    # Per-half scores JSON: {"away": [1H, 2H, OT], "home": [1H, 2H, OT]}
+    half_scores_json: str = Field(default_factory=_default_half_scores)
     down: int = Field(default=1, ge=1, le=4)
     distance: Distance = Field(default=Distance.MIDFIELD)
     possession: Possession = Field(default=Possession.HOME)
@@ -85,6 +98,7 @@ class FootballGameRead(SQLModel):
     home_score: int
     away_score: int
     half: Half
+    half_scores: HalfScores  # computed from half_scores_json
     down: int
     distance: Distance
     possession: Possession

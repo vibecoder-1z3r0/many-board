@@ -284,6 +284,71 @@ def test_get_returns_computed_clock_while_running(client: TestClient) -> None:
     assert resp.json()["play_clock"] <= 39  # computed, not raw stored value
 
 
+# ── Box score / half scores ───────────────────────────────────────────────────
+
+
+def test_half_scores_initialized_null(client: TestClient) -> None:
+    game_id = _new_game(client)
+    data = client.get(f"/api/football/games/{game_id}").json()
+    assert data["half_scores"] == {"away": [None, None, None], "home": [None, None, None]}
+
+
+def test_half_transition_snapshots_first_half(client: TestClient) -> None:
+    game_id = _new_game(client)
+    client.patch(f"/api/football/games/{game_id}/score", json={"team": "home", "delta": 6})
+    client.patch(f"/api/football/games/{game_id}/score", json={"team": "away", "delta": 7})
+    resp = client.patch(f"/api/football/games/{game_id}/half", json={"half": "halftime"})
+    assert resp.status_code == 200
+    hs = resp.json()["half_scores"]
+    assert hs["home"][0] == 6
+    assert hs["away"][0] == 7
+    assert hs["home"][1] is None  # 2H not yet played
+
+
+def test_half_transition_snapshots_second_half(client: TestClient) -> None:
+    game_id = _new_game(client)
+    client.patch(f"/api/football/games/{game_id}/score", json={"team": "home", "delta": 6})
+    client.patch(f"/api/football/games/{game_id}/half", json={"half": "halftime"})
+    client.patch(f"/api/football/games/{game_id}/half", json={"half": "second"})
+    client.patch(f"/api/football/games/{game_id}/score", json={"team": "home", "delta": 7})
+    resp = client.patch(f"/api/football/games/{game_id}/half", json={"half": "final"})
+    hs = resp.json()["half_scores"]
+    assert hs["home"][0] == 6   # 1H
+    assert hs["home"][1] == 7   # 2H (13 total - 6 from 1H)
+
+
+def test_half_score_ot_transition(client: TestClient) -> None:
+    game_id = _new_game(client)
+    client.patch(f"/api/football/games/{game_id}/half", json={"half": "halftime"})
+    client.patch(f"/api/football/games/{game_id}/half", json={"half": "second"})
+    client.patch(f"/api/football/games/{game_id}/score", json={"team": "away", "delta": 6})
+    client.patch(f"/api/football/games/{game_id}/half", json={"half": "ot"})
+    client.patch(f"/api/football/games/{game_id}/score", json={"team": "home", "delta": 6})
+    resp = client.patch(f"/api/football/games/{game_id}/half", json={"half": "final"})
+    hs = resp.json()["half_scores"]
+    assert hs["away"][1] == 6   # 2H
+    assert hs["home"][2] == 6   # OT
+
+
+def test_set_half_score_correction(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(
+        f"/api/football/games/{game_id}/half-score",
+        json={"half": "first", "team": "home", "points": 14},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["half_scores"]["home"][0] == 14
+
+
+def test_set_half_score_invalid_half(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(
+        f"/api/football/games/{game_id}/half-score",
+        json={"half": "halftime", "team": "home", "points": 0},
+    )
+    assert resp.status_code == 422
+
+
 def test_create_game_default_team_names(client: TestClient) -> None:
     resp = client.post("/api/football/games", json={})
     assert resp.status_code == 201
