@@ -74,9 +74,9 @@ class FootballGame(SQLModel, table=True):
     game_clock_running: bool = Field(default=False)
     game_clock_started_at: datetime | None = Field(default=None)
     # play_clock_default: configured duration, used for reset
-    play_clock_default: int = Field(default=40, ge=1)
+    play_clock_default: int = Field(default=30, ge=1)
     # play_clock: remaining seconds as of play_clock_started_at (or now, if stopped)
-    play_clock: int = Field(default=40, ge=0)
+    play_clock: int = Field(default=30, ge=0)
     play_clock_running: bool = Field(default=False)
     play_clock_started_at: datetime | None = Field(default=None)
     no_run_zone: bool = Field(default=False)
@@ -95,7 +95,7 @@ class FootballGameCreate(SQLModel):
     home_timeouts: int = Field(default=3, ge=0)
     away_timeouts: int = Field(default=3, ge=0)
     game_clock: int = Field(default=1200, ge=1)
-    play_clock: int = Field(default=40, ge=1)
+    play_clock: int = Field(default=30, ge=1)
 
 
 class FootballGameRead(SQLModel):

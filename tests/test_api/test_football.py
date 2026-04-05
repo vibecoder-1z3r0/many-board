@@ -20,8 +20,8 @@ def test_create_football_game(client: TestClient) -> None:
     assert data["possession"] == "home"
     assert data["home_timeouts"] == 3
     assert data["away_timeouts"] == 3
-    assert data["play_clock"] == 40
-    assert data["play_clock_default"] == 40
+    assert data["play_clock"] == 30
+    assert data["play_clock_default"] == 30
     assert data["play_clock_running"] is False
     assert data["no_run_zone"] is False
     assert "id" in data
@@ -269,7 +269,7 @@ def test_reset_play_clock(client: TestClient) -> None:
     resp = client.patch(f"/api/football/games/{game_id}/play-clock/reset")
     assert resp.status_code == 200
     data = resp.json()
-    assert data["play_clock"] == 40  # back to default
+    assert data["play_clock"] == 30  # back to default
     assert data["play_clock_running"] is False
 
 

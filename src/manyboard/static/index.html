@@ -325,9 +325,15 @@
       <div id="fields-football">
         <div class="form-row">
           <div class="form-group">
-            <label>Play Clock (sec)</label>
-            <input id="play-clock" type="number" value="40" min="5" max="99">
+            <label>Half Length (M:SS)</label>
+            <input id="game-clock" type="text" value="20:00" placeholder="20:00">
           </div>
+          <div class="form-group">
+            <label>Play Clock (sec)</label>
+            <input id="play-clock" type="number" value="30" min="5" max="99">
+          </div>
+        </div>
+        <div class="form-row">
           <div class="form-group">
             <label>Timeouts per Team</label>
             <input id="timeouts" type="number" value="3" min="0" max="9">
@@ -554,10 +560,13 @@
 
       let url, body;
       if (sport === 'football') {
-        const playClock = parseInt(document.getElementById('play-clock').value) || 40;
+        const gcRaw    = document.getElementById('game-clock').value.trim();
+        const gcMatch  = gcRaw.match(/^(\d+):(\d{1,2})$/);
+        const gameClock = gcMatch ? parseInt(gcMatch[1]) * 60 + parseInt(gcMatch[2]) : (parseInt(gcRaw) || 1200);
+        const playClock = parseInt(document.getElementById('play-clock').value) || 30;
         const timeouts  = parseInt(document.getElementById('timeouts').value) ?? 3;
         url  = '/api/football/games';
-        body = { home_team: homeTeam, away_team: awayTeam, play_clock: playClock, home_timeouts: timeouts, away_timeouts: timeouts };
+        body = { home_team: homeTeam, away_team: awayTeam, game_clock: gameClock, play_clock: playClock, home_timeouts: timeouts, away_timeouts: timeouts };
       } else {
         const numInnings = parseInt(document.getElementById('num-innings').value) || 6;
         const bsoStyle   = document.getElementById('bso-style').value;
