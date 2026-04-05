@@ -352,6 +352,21 @@ def test_set_game_final(client: TestClient) -> None:
     assert resp.json()["status"] == "final"
 
 
+# ── Delete ───────────────────────────────────────────────────────────────────
+
+
+def test_delete_baseball_game(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.delete(f"/api/baseball/games/{game_id}")
+    assert resp.status_code == 204
+    assert client.get(f"/api/baseball/games/{game_id}").status_code == 404
+
+
+def test_delete_baseball_game_not_found(client: TestClient) -> None:
+    resp = client.delete("/api/baseball/games/nonexistent")
+    assert resp.status_code == 404
+
+
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 

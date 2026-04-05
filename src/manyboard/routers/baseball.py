@@ -177,6 +177,13 @@ def get_game(game_id: str, session: SessionDep) -> BaseballGameRead:
     return _to_read(_get_game(game_id, session))
 
 
+@router.delete("/{game_id}", status_code=204)
+def delete_game(game_id: str, session: SessionDep) -> None:
+    game = _get_game(game_id, session)
+    session.delete(game)
+    session.commit()
+
+
 @router.patch("/{game_id}/teams")
 def update_teams(
     game_id: str, update: TeamNamesUpdate, session: SessionDep

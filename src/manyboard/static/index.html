@@ -111,6 +111,7 @@
       display: inline-block;
     }
     .btn:hover { border-color: #e94560; color: #e94560; }
+    .btn-danger:hover { border-color: #c0392b; color: #c0392b; }
 
     .btn-primary {
       background: #e94560;
@@ -314,6 +315,7 @@
             <a href="/football.html?game=${g.id}&view=display" class="btn">Display</a>
             <a href="/football.html?game=${g.id}&view=control" class="btn">Control</a>
             <a href="/football.html?game=${g.id}&view=clock" class="btn">Clock</a>
+            <button class="btn btn-danger" onclick="deleteGame('football','${g.id}')">Delete</button>
           </div>
         </div>`;
     }
@@ -337,6 +339,7 @@
           <div class="card-actions">
             <a href="/baseball.html?game=${g.id}&view=boxscore" class="btn">Box Score</a>
             <a href="/baseball.html?game=${g.id}&view=ump" class="btn">Ump</a>
+            <button class="btn btn-danger" onclick="deleteGame('baseball','${g.id}')">Delete</button>
           </div>
         </div>`;
     }
@@ -400,6 +403,13 @@
       if (e.key === 'Enter' && document.getElementById('modal').classList.contains('open')) createGame();
       if (e.key === 'Escape') closeModal();
     });
+
+    async function deleteGame(sport, id) {
+      if (!confirm('Delete this game? This cannot be undone.')) return;
+      const url = sport === 'football' ? `/api/football/games/${id}` : `/api/baseball/games/${id}`;
+      const resp = await fetch(url, { method: 'DELETE' });
+      if (resp.ok) await loadGames();
+    }
 
     loadGames();
     setInterval(loadGames, 5000);
