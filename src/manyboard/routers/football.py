@@ -65,7 +65,7 @@ class HalfUpdate(BaseModel):
 
 class HalfScoreUpdate(BaseModel):
     half: Half  # first | second | ot
-    team: str   # "home" or "away"
+    team: str  # "home" or "away"
     points: int
 
 

@@ -183,6 +183,15 @@ SECOND→OT snapshots 2H score; OT→FINAL snapshots OT score.
 | PATCH | `/{id}/teams` | Update team names |
 | PATCH | `/{id}/bso-style` | Set BSO display style (dots/numbers/both) |
 | PATCH | `/{id}/status` | Set game status string |
+| PATCH | `/{id}/stat` | Increment/decrement a stat (`team`, `stat`, `delta`) |
+| PATCH | `/{id}/batting` | Set at-bat / next-up text and visibility |
+
+Stats (`stat` field values): `singles`, `doubles`, `triples`, `hrs`, `strikeouts`, `lob`, `errors`.
+`team` is `"home"` or `"away"`. `errors` should be posted to the **fielding** team.
+`home_hits` / `away_hits` are computed in `_to_read` (sum of 1B+2B+3B+HR) and returned read-only.
+
+`batting` fields: `at_bat` (str), `next_up` (str), `at_bat_visible` (bool), `next_up_visible` (bool).
+All optional — only supplied fields are updated. Box Score view renders banners when visible and non-empty.
 
 ---
 

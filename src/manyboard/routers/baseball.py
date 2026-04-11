@@ -62,6 +62,24 @@ class RunUpdate(BaseModel):
     delta: int = 1
 
 
+_STAT_FIELDS = frozenset(
+    {"strikeouts", "lob", "errors", "singles", "doubles", "triples", "hrs"}
+)
+
+
+class StatUpdate(BaseModel):
+    team: str  # "home" or "away"
+    stat: str  # one of _STAT_FIELDS
+    delta: int = 1
+
+
+class BattingUpdate(BaseModel):
+    at_bat: str | None = None
+    next_up: str | None = None
+    at_bat_visible: bool | None = None
+    next_up_visible: bool | None = None
+
+
 # --- Helpers ---
 
 
@@ -154,6 +172,30 @@ def _to_read(game: BaseballGame) -> BaseballGameRead:
         away_total=sum(_cell_runs(s) for s in away),
         home_total=sum(_cell_runs(s) for s in home),
         status=game.status,
+        home_strikeouts=game.home_strikeouts,
+        away_strikeouts=game.away_strikeouts,
+        home_lob=game.home_lob,
+        away_lob=game.away_lob,
+        home_errors=game.home_errors,
+        away_errors=game.away_errors,
+        home_singles=game.home_singles,
+        away_singles=game.away_singles,
+        home_doubles=game.home_doubles,
+        away_doubles=game.away_doubles,
+        home_triples=game.home_triples,
+        away_triples=game.away_triples,
+        home_hrs=game.home_hrs,
+        away_hrs=game.away_hrs,
+        home_hits=(
+            game.home_singles + game.home_doubles + game.home_triples + game.home_hrs
+        ),
+        away_hits=(
+            game.away_singles + game.away_doubles + game.away_triples + game.away_hrs
+        ),
+        at_bat=game.at_bat,
+        next_up=game.next_up,
+        at_bat_visible=game.at_bat_visible,
+        next_up_visible=game.next_up_visible,
         created_at=game.created_at,
         updated_at=game.updated_at,
     )
@@ -365,4 +407,34 @@ def set_status(
 ) -> BaseballGameRead:
     game = _get_game(game_id, session)
     game.status = update.status
+    return _to_read(_save(game, session))
+
+
+@router.patch("/{game_id}/stat")
+def update_stat(
+    game_id: str, update: StatUpdate, session: SessionDep
+) -> BaseballGameRead:
+    if update.team not in ("home", "away"):
+        raise HTTPException(status_code=422, detail="team must be 'home' or 'away'")
+    if update.stat not in _STAT_FIELDS:
+        raise HTTPException(status_code=422, detail=f"Unknown stat '{update.stat}'")
+    game = _get_game(game_id, session)
+    field = f"{update.team}_{update.stat}"
+    setattr(game, field, max(0, getattr(game, field) + update.delta))
+    return _to_read(_save(game, session))
+
+
+@router.patch("/{game_id}/batting")
+def update_batting(
+    game_id: str, update: BattingUpdate, session: SessionDep
+) -> BaseballGameRead:
+    game = _get_game(game_id, session)
+    if update.at_bat is not None:
+        game.at_bat = update.at_bat
+    if update.next_up is not None:
+        game.next_up = update.next_up
+    if update.at_bat_visible is not None:
+        game.at_bat_visible = update.at_bat_visible
+    if update.next_up_visible is not None:
+        game.next_up_visible = update.next_up_visible
     return _to_read(_save(game, session))

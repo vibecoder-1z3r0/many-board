@@ -56,6 +56,28 @@ class BaseballGame(SQLModel, table=True):
     bso_style: BSOStyle = Field(default=BSOStyle.DOTS)
     status: str = Field(default="active")
 
+    # Per-team stats
+    home_strikeouts: int = Field(default=0, ge=0)
+    away_strikeouts: int = Field(default=0, ge=0)
+    home_lob: int = Field(default=0, ge=0)
+    away_lob: int = Field(default=0, ge=0)
+    home_errors: int = Field(default=0, ge=0)
+    away_errors: int = Field(default=0, ge=0)
+    home_singles: int = Field(default=0, ge=0)
+    away_singles: int = Field(default=0, ge=0)
+    home_doubles: int = Field(default=0, ge=0)
+    away_doubles: int = Field(default=0, ge=0)
+    home_triples: int = Field(default=0, ge=0)
+    away_triples: int = Field(default=0, ge=0)
+    home_hrs: int = Field(default=0, ge=0)
+    away_hrs: int = Field(default=0, ge=0)
+
+    # Batting order display
+    at_bat: str = Field(default="")
+    next_up: str = Field(default="")
+    at_bat_visible: bool = Field(default=True)
+    next_up_visible: bool = Field(default=True)
+
     created_at: datetime = Field(default_factory=_utcnow)
     updated_at: datetime = Field(default_factory=_utcnow)
 
@@ -96,5 +118,30 @@ class BaseballGameRead(SQLModel):
     away_total: int
     home_total: int
     status: str
+
+    # Stats
+    home_strikeouts: int
+    away_strikeouts: int
+    home_lob: int
+    away_lob: int
+    home_errors: int
+    away_errors: int
+    home_singles: int
+    away_singles: int
+    home_doubles: int
+    away_doubles: int
+    home_triples: int
+    away_triples: int
+    home_hrs: int
+    away_hrs: int
+    home_hits: int  # computed: singles + doubles + triples + hrs
+    away_hits: int
+
+    # Batting display
+    at_bat: str
+    next_up: str
+    at_bat_visible: bool
+    next_up_visible: bool
+
     created_at: datetime
     updated_at: datetime

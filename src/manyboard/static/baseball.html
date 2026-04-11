@@ -361,6 +361,87 @@
     .team-name-input:focus { border-color: var(--accent); }
 
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    /* ── Stats mini-table ────────────────────────────────── */
+    .bs-stats-wrap { overflow-x: auto; max-width: 100%; }
+    .bs-stats-table {
+      border-collapse: collapse;
+      font-family: monospace;
+      font-size: clamp(14px, 2.5vh, 20px);
+      color: var(--text-dim);
+    }
+    .bs-stats-table th {
+      font-size: clamp(10px, 1.4vh, 13px);
+      color: var(--text-dimmer);
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-bottom: 1px solid var(--border-dark);
+    }
+    .bs-stats-table td {
+      padding: 4px 10px;
+      text-align: center;
+    }
+    .bs-stats-table .stat-team { text-align: left; color: var(--text); font-weight: 700; white-space: nowrap; }
+    .bs-stats-table .stat-hits { color: var(--highlight); }
+    .bs-stats-table .stat-err  { color: var(--accent); }
+
+    /* ── At bat / On deck banners ────────────────────────── */
+    .batting-banners { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .at-bat-banner {
+      font-size: clamp(16px, 2.8vh, 24px);
+      font-weight: 700;
+      color: var(--text-bright);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      padding: 6px 16px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+    .at-bat-banner .batting-label {
+      font-size: clamp(9px, 1.2vh, 11px);
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 700;
+      margin-right: 8px;
+    }
+    .on-deck-banner {
+      font-size: clamp(13px, 2vh, 18px);
+      color: var(--text-dim);
+      background: var(--panel);
+      border: 1px solid var(--border-dark);
+      border-left: 4px solid var(--highlight);
+      padding: 5px 16px;
+      border-radius: 6px;
+    }
+    .on-deck-banner .batting-label {
+      font-size: clamp(9px, 1.2vh, 11px);
+      color: var(--highlight);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 700;
+      margin-right: 8px;
+    }
+
+    /* ── Stat buttons in ump view ────────────────────────── */
+    .btn-hit { background: #0e1e2e; color: var(--highlight); border-color: var(--highlight); }
+    .btn-hit:hover { background: var(--highlight); color: var(--input-bg); }
+    .btn-hr  { background: #0e2e0e; color: #2ecc71; border-color: #2ecc71; }
+    .btn-hr:hover  { background: #2ecc71; color: var(--input-bg); }
+    .btn-err { background: #2e0e0e; color: var(--accent); border-color: var(--accent); }
+    .btn-err:hover { background: var(--accent); color: var(--text-bright); }
+
+    /* Batting order inputs in control */
+    .batting-input {
+      background: var(--input-bg); color: var(--text); border: 1px solid var(--border-dark);
+      padding: 5px 8px; border-radius: 6px; font-size: 13px; outline: none; max-width: 160px;
+    }
+    .batting-input:focus { border-color: var(--accent); }
+    .vis-btn { font-size: 11px; padding: 4px 8px; }
+    .vis-btn.hidden-state { border-color: var(--text-dimmer); color: var(--text-dimmer); }
   </style>
 </head>
 <body>
@@ -433,6 +514,52 @@
       </div>
     </div>
 
+    <!-- Stats mini-table -->
+    <div class="bs-stats-wrap" id="bs-stats-wrap">
+      <table class="bs-stats-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>H</th>
+            <th>E</th>
+            <th>K</th>
+            <th>LOB</th>
+            <th>1B</th>
+            <th>2B</th>
+            <th>3B</th>
+            <th>HR</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="stat-team" id="bs-stat-away-name"></td>
+            <td class="stat-hits" id="bs-stat-away-hits"></td>
+            <td class="stat-err"  id="bs-stat-away-errors"></td>
+            <td id="bs-stat-away-k"></td>
+            <td id="bs-stat-away-lob"></td>
+            <td id="bs-stat-away-1b"></td>
+            <td id="bs-stat-away-2b"></td>
+            <td id="bs-stat-away-3b"></td>
+            <td id="bs-stat-away-hr"></td>
+          </tr>
+          <tr>
+            <td class="stat-team" id="bs-stat-home-name"></td>
+            <td class="stat-hits" id="bs-stat-home-hits"></td>
+            <td class="stat-err"  id="bs-stat-home-errors"></td>
+            <td id="bs-stat-home-k"></td>
+            <td id="bs-stat-home-lob"></td>
+            <td id="bs-stat-home-1b"></td>
+            <td id="bs-stat-home-2b"></td>
+            <td id="bs-stat-home-3b"></td>
+            <td id="bs-stat-home-hr"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- At bat / On deck -->
+    <div class="batting-banners" id="bs-batting-banners"></div>
+
   </div>
 
   <!-- ── UMP VIEW (field actions) ─────────────────────── -->
@@ -485,6 +612,30 @@
           <div class="base-empty"></div>
         </div>
         <button class="btn" onclick="clearBases()">Clear Bases</button>
+      </div>
+    </div>
+
+    <!-- Hits -->
+    <div class="ctrl-section">
+      <div class="ctrl-header" id="ump-hits-header">Hits</div>
+      <div class="ctrl-row">
+        <button class="btn-big btn-hit" onclick="recordHit('singles')">1B</button>
+        <button class="btn-big btn-hit" onclick="recordHit('doubles')">2B</button>
+        <button class="btn-big btn-hit" onclick="recordHit('triples')">3B</button>
+        <button class="btn-big btn-hr"  onclick="recordHit('hrs')">HR</button>
+      </div>
+    </div>
+
+    <!-- Other stats -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">Other Stats</div>
+      <div class="ctrl-row">
+        <button class="btn" onclick="recordBattingStat('strikeouts', 1)">+K</button>
+        <button class="btn" onclick="recordBattingStat('strikeouts', -1)">−K</button>
+        <button class="btn" onclick="recordBattingStat('lob', 1)">+LOB</button>
+        <button class="btn" onclick="recordBattingStat('lob', -1)">−LOB</button>
+        <button class="btn btn-err" onclick="recordFieldingError()">+Error</button>
+        <button class="btn btn-err" onclick="recordFieldingError(-1)">−Error</button>
       </div>
     </div>
 
@@ -557,6 +708,47 @@
       <div class="ctrl-row">
         <button class="btn" id="status-active" onclick="setStatus('active')">Active</button>
         <button class="btn" id="status-final"  onclick="setStatus('final')" style="color:var(--accent);border-color:var(--accent);">Final</button>
+      </div>
+    </div>
+
+    <!-- At bat / Next up -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">At Bat / On Deck</div>
+      <div class="ctrl-row" style="gap:8px; flex-wrap:wrap; align-items:center;">
+        <span style="font-size:12px;color:var(--text-dim);min-width:52px;">At Bat</span>
+        <input class="batting-input" id="edit-at-bat" type="text" maxlength="40" placeholder="Batter name / #">
+        <button class="btn vis-btn" id="btn-at-bat-vis" onclick="toggleBattingVis('at_bat_visible')">Show</button>
+      </div>
+      <div class="ctrl-row" style="gap:8px; flex-wrap:wrap; align-items:center; margin-top:4px;">
+        <span style="font-size:12px;color:var(--text-dim);min-width:52px;">On Deck</span>
+        <input class="batting-input" id="edit-next-up" type="text" maxlength="40" placeholder="Next batter / #">
+        <button class="btn vis-btn" id="btn-next-up-vis" onclick="toggleBattingVis('next_up_visible')">Show</button>
+      </div>
+      <div class="ctrl-row" style="margin-top:6px;">
+        <button class="btn-primary" onclick="saveBatting()">Save Names</button>
+        <button class="btn" onclick="clearBatting()">Clear</button>
+      </div>
+    </div>
+
+    <!-- Stats correction -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">Stats Correction</div>
+      <div class="ctrl-row">
+        <select id="stat-team" class="inning-edit-input" style="width:auto">
+          <option value="away">Away</option>
+          <option value="home">Home</option>
+        </select>
+        <select id="stat-name" class="inning-edit-input" style="width:auto">
+          <option value="singles">1B</option>
+          <option value="doubles">2B</option>
+          <option value="triples">3B</option>
+          <option value="hrs">HR</option>
+          <option value="strikeouts">K</option>
+          <option value="lob">LOB</option>
+          <option value="errors">E</option>
+        </select>
+        <button class="btn" onclick="adjustStat(1)">+1</button>
+        <button class="btn" onclick="adjustStat(-1)">−1</button>
       </div>
     </div>
 
@@ -691,6 +883,42 @@
       document.getElementById('bs-base-1st').classList.toggle('occupied', s.base_first);
       document.getElementById('bs-base-2nd').classList.toggle('occupied', s.base_second);
       document.getElementById('bs-base-3rd').classList.toggle('occupied', s.base_third);
+
+      // Stats mini-table
+      setText('bs-stat-away-name', s.away_team);
+      setText('bs-stat-home-name', s.home_team);
+      setText('bs-stat-away-hits',   s.away_hits);
+      setText('bs-stat-home-hits',   s.home_hits);
+      setText('bs-stat-away-errors', s.away_errors);
+      setText('bs-stat-home-errors', s.home_errors);
+      setText('bs-stat-away-k',      s.away_strikeouts);
+      setText('bs-stat-home-k',      s.home_strikeouts);
+      setText('bs-stat-away-lob',    s.away_lob);
+      setText('bs-stat-home-lob',    s.home_lob);
+      setText('bs-stat-away-1b',     s.away_singles);
+      setText('bs-stat-home-1b',     s.home_singles);
+      setText('bs-stat-away-2b',     s.away_doubles);
+      setText('bs-stat-home-2b',     s.home_doubles);
+      setText('bs-stat-away-3b',     s.away_triples);
+      setText('bs-stat-home-3b',     s.home_triples);
+      setText('bs-stat-away-hr',     s.away_hrs);
+      setText('bs-stat-home-hr',     s.home_hrs);
+
+      // At bat / On deck banners
+      const banners = document.getElementById('bs-batting-banners');
+      banners.innerHTML = '';
+      if (s.at_bat_visible && s.at_bat) {
+        const b = document.createElement('div');
+        b.className = 'at-bat-banner';
+        b.innerHTML = `<span class="batting-label">At Bat</span>${s.at_bat}`;
+        banners.appendChild(b);
+      }
+      if (s.next_up_visible && s.next_up) {
+        const d = document.createElement('div');
+        d.className = 'on-deck-banner';
+        d.innerHTML = `<span class="batting-label">On Deck</span>${s.next_up}`;
+        banners.appendChild(d);
+      }
     }
 
     function renderBSO(containerId, s) {
@@ -729,6 +957,7 @@
       const battingTeam = s.half === 'top' ? s.away_team : s.home_team;
       setText('ump-run-btn', `+1 Run (${battingTeam})`);
       setText('ump-score-display', `A: ${s.away_total}  H: ${s.home_total}`);
+      setText('ump-hits-header', `Hits — ${battingTeam}`);
     }
 
     function renderControl() {
@@ -745,6 +974,21 @@
       const sf = document.getElementById('status-final');
       if (sa) { sa.style.borderColor = s.status === 'active' ? '#2ecc71' : ''; sa.style.color = s.status === 'active' ? '#2ecc71' : ''; }
       if (sf) { sf.style.borderColor = s.status === 'final' ? 'var(--accent)' : ''; sf.style.color = s.status === 'final' ? 'var(--accent)' : ''; }
+
+      // At bat / next up
+      const abIn = document.getElementById('edit-at-bat');
+      const nuIn = document.getElementById('edit-next-up');
+      if (abIn && document.activeElement !== abIn) abIn.value = s.at_bat;
+      if (nuIn && document.activeElement !== nuIn) nuIn.value = s.next_up;
+      _syncVisBtn('btn-at-bat-vis',  s.at_bat_visible);
+      _syncVisBtn('btn-next-up-vis', s.next_up_visible);
+    }
+
+    function _syncVisBtn(id, visible) {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      btn.textContent = visible ? 'Visible' : 'Hidden';
+      btn.classList.toggle('hidden-state', !visible);
     }
 
     function renderBSOUmp(s) {
@@ -834,6 +1078,51 @@
 
     async function setStatus(status) {
       await api('status', { status });
+    }
+
+    // ── Stat recording ───────────────────────────────────
+    function _battingTeam() {
+      return state && state.half === 'top' ? 'away' : 'home';
+    }
+    function _fieldingTeam() {
+      return state && state.half === 'top' ? 'home' : 'away';
+    }
+
+    async function recordHit(stat) {
+      if (!state) return;
+      await api('stat', { team: _battingTeam(), stat, delta: 1 });
+    }
+
+    async function recordBattingStat(stat, delta) {
+      if (!state) return;
+      await api('stat', { team: _battingTeam(), stat, delta });
+    }
+
+    async function recordFieldingError(delta = 1) {
+      if (!state) return;
+      await api('stat', { team: _fieldingTeam(), stat: 'errors', delta });
+    }
+
+    async function adjustStat(delta) {
+      const team = document.getElementById('stat-team').value;
+      const stat = document.getElementById('stat-name').value;
+      await api('stat', { team, stat, delta });
+    }
+
+    // ── Batting order ────────────────────────────────────
+    async function saveBatting() {
+      const at_bat  = document.getElementById('edit-at-bat').value.trim();
+      const next_up = document.getElementById('edit-next-up').value.trim();
+      await api('batting', { at_bat, next_up });
+    }
+
+    async function clearBatting() {
+      await api('batting', { at_bat: '', next_up: '' });
+    }
+
+    async function toggleBattingVis(field) {
+      if (!state) return;
+      await api('batting', { [field]: !state[field] });
     }
 
     // ── DOM helpers ──────────────────────────────────────
