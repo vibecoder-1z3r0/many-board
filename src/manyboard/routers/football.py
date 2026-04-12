@@ -201,6 +201,7 @@ def get_game(game_id: str, session: SessionDep) -> FootballGameRead:
         dirty = True
     if dirty:
         _save(game, session)
+        return _to_read(game)
     return read
 
 

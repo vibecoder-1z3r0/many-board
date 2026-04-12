@@ -654,6 +654,50 @@ def test_delete_baseball_game_not_found(client: TestClient) -> None:
     assert resp.status_code == 404
 
 
+# ── Strikeout causing 3rd out ends half-inning ────────────────────────────────
+
+
+def test_strikeout_as_third_out_ends_half(client: TestClient) -> None:
+    """3rd strike when outs=2 should trigger end-of-half via record_strike."""
+    game_id = _new_game(client)
+    # Get to 2 outs first
+    client.patch(f"/api/baseball/games/{game_id}/out")
+    client.patch(f"/api/baseball/games/{game_id}/out")
+    # Now strikeout (3 strikes) for the 3rd out
+    client.patch(f"/api/baseball/games/{game_id}/strike")
+    client.patch(f"/api/baseball/games/{game_id}/strike")
+    resp = client.patch(f"/api/baseball/games/{game_id}/strike")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["outs"] == 0  # reset by end-of-half
+    assert data["half"] == "bottom"  # advanced from top
+
+
+# ── set_inning_score out-of-range ─────────────────────────────────────────────
+
+
+def test_inning_score_out_of_range(client: TestClient) -> None:
+    game_id = _new_game(client)  # 6 innings
+    resp = client.patch(
+        f"/api/baseball/games/{game_id}/inning-score",
+        json={"inning": 99, "half": "top", "runs": 1},
+    )
+    assert resp.status_code == 400
+
+
+# ── next_up_visible toggle ────────────────────────────────────────────────────
+
+
+def test_batting_hide_next_up(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(
+        f"/api/baseball/games/{game_id}/batting", json={"next_up_visible": False}
+    )
+    assert resp.status_code == 200
+    assert resp.json()["next_up_visible"] is False
+    assert resp.json()["at_bat_visible"] is True  # untouched
+
+
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 

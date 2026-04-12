@@ -603,6 +603,103 @@ def test_delete_football_game_not_found(client: TestClient) -> None:
     assert resp.status_code == 404
 
 
+# ── Score edge cases ──────────────────────────────────────────────────────────
+
+
+def test_away_score_cannot_go_negative(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(
+        f"/api/football/games/{game_id}/score", json={"team": "away", "delta": -1}
+    )
+    assert resp.status_code == 400
+
+
+def test_score_invalid_team_rejected(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(
+        f"/api/football/games/{game_id}/score", json={"team": "both", "delta": 6}
+    )
+    assert resp.status_code == 422
+
+
+# ── Timeout edge cases ────────────────────────────────────────────────────────
+
+
+def test_away_timeout_cannot_go_below_zero(client: TestClient) -> None:
+    game_id = _new_game(client, away_timeouts=0)
+    resp = client.patch(f"/api/football/games/{game_id}/timeout", json={"team": "away"})
+    assert resp.status_code == 400
+
+
+def test_timeout_invalid_team_rejected(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(
+        f"/api/football/games/{game_id}/timeout", json={"team": "referee"}
+    )
+    assert resp.status_code == 422
+
+
+def test_restore_away_timeout(client: TestClient) -> None:
+    game_id = _new_game(client)
+    client.patch(f"/api/football/games/{game_id}/timeout", json={"team": "away"})
+    resp = client.patch(
+        f"/api/football/games/{game_id}/timeout/restore", json={"team": "away"}
+    )
+    assert resp.status_code == 200
+    assert resp.json()["away_timeouts"] == 3
+
+
+def test_restore_timeout_invalid_team_rejected(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(
+        f"/api/football/games/{game_id}/timeout/restore", json={"team": "referee"}
+    )
+    assert resp.status_code == 422
+
+
+# ── Half-score correction edge cases ─────────────────────────────────────────
+
+
+def test_half_score_invalid_team_rejected(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(
+        f"/api/football/games/{game_id}/half-score",
+        json={"half": "first", "team": "both", "points": 7},
+    )
+    assert resp.status_code == 422
+
+
+# ── Clock auto-stop at zero ───────────────────────────────────────────────────
+
+
+def test_get_auto_stops_game_clock_at_zero(client: TestClient) -> None:
+    import time
+
+    # Create game with 1-second game clock
+    resp = client.post(
+        "/api/football/games",
+        json={"home_team": "A", "away_team": "B", "game_clock": 1},
+    )
+    game_id = resp.json()["id"]
+    client.patch(f"/api/football/games/{game_id}/game-clock/start")
+    time.sleep(1.5)
+    data = client.get(f"/api/football/games/{game_id}").json()
+    assert data["game_clock"] == 0
+    assert data["game_clock_running"] is False
+
+
+def test_get_auto_stops_play_clock_at_zero(client: TestClient) -> None:
+    import time
+
+    game_id = _new_game(client)
+    client.patch(f"/api/football/games/{game_id}/play-clock", json={"seconds": 1})
+    client.patch(f"/api/football/games/{game_id}/play-clock/start")
+    time.sleep(1.5)
+    data = client.get(f"/api/football/games/{game_id}").json()
+    assert data["play_clock"] == 0
+    assert data["play_clock_running"] is False
+
+
 # --- helpers ---
 
 
