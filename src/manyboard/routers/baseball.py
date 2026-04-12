@@ -80,6 +80,10 @@ class BattingUpdate(BaseModel):
     next_up_visible: bool | None = None
 
 
+# Module-level singleton — avoids B008 (no function call in default arg)
+_DEFAULT_RUN_UPDATE = RunUpdate()
+
+
 # --- Helpers ---
 
 
@@ -314,7 +318,7 @@ def reset_count(game_id: str, session: SessionDep) -> BaseballGameRead:
 
 @router.patch("/{game_id}/run")
 def record_run(
-    game_id: str, session: SessionDep, update: RunUpdate = RunUpdate()
+    game_id: str, session: SessionDep, update: RunUpdate = _DEFAULT_RUN_UPDATE
 ) -> BaseballGameRead:
     game = _get_game(game_id, session)
     scores = _get_scores(game)

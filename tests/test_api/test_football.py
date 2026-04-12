@@ -319,8 +319,8 @@ def test_half_transition_snapshots_second_half(client: TestClient) -> None:
     client.patch(score, json={"team": "home", "delta": 7})
     resp = client.patch(f"/api/football/games/{game_id}/half", json={"half": "final"})
     hs = resp.json()["half_scores"]
-    assert hs["home"][0] == 6   # 1H
-    assert hs["home"][1] == 7   # 2H (13 total - 6 from 1H)
+    assert hs["home"][0] == 6  # 1H
+    assert hs["home"][1] == 7  # 2H (13 total - 6 from 1H)
 
 
 def test_half_score_ot_transition(client: TestClient) -> None:
@@ -334,8 +334,8 @@ def test_half_score_ot_transition(client: TestClient) -> None:
     client.patch(score, json={"team": "home", "delta": 6})
     resp = client.patch(f"/api/football/games/{game_id}/half", json={"half": "final"})
     hs = resp.json()["half_scores"]
-    assert hs["away"][1] == 6   # 2H
-    assert hs["home"][2] == 6   # OT
+    assert hs["away"][1] == 6  # 2H
+    assert hs["home"][2] == 6  # OT
 
 
 def test_set_half_score_correction(client: TestClient) -> None:
