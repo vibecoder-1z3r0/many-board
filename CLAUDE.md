@@ -148,15 +148,16 @@ next inning.
 | PATCH | `/{id}/game-clock/start` | Start game clock |
 | PATCH | `/{id}/game-clock/stop` | Stop game clock |
 | PATCH | `/{id}/game-clock/reset` | Reset game clock to default |
-| PATCH | `/{id}/play-clock` | Set play clock |
+| PATCH | `/{id}/play-clock` | Set play clock (seconds) |
 | PATCH | `/{id}/play-clock/start` | Start play clock |
 | PATCH | `/{id}/play-clock/stop` | Stop play clock |
-| PATCH | `/{id}/play-clock/reset` | Reset play clock |
+| PATCH | `/{id}/play-clock/reset` | Reset play clock to default |
+| PATCH | `/{id}/play-clock/default` | Change play clock reset duration |
 | PATCH | `/{id}/half-score` | Manually correct a half score |
 | PATCH | `/{id}/pat` | Set PAT marker (1pt / 2pt / clear) |
 | PATCH | `/{id}/ot` | Enable/disable OT |
 | PATCH | `/{id}/teams` | Update team names |
-| PATCH | `/{id}/status` | Set game status string |
+| PATCH | `/{id}/status` | Set game status string (default `"active"`) |
 
 Half transition logic: FIRST→HALFTIME snapshots 1H score; SECOND→FINAL or
 SECOND→OT snapshots 2H score; OT→FINAL snapshots OT score.
@@ -192,6 +193,11 @@ Stats (`stat` field values): `singles`, `doubles`, `triples`, `hrs`, `strikeouts
 
 `batting` fields: `at_bat` (str), `next_up` (str), `at_bat_visible` (bool), `next_up_visible` (bool).
 All optional — only supplied fields are updated. Box Score view renders banners when visible and non-empty.
+
+### Status field (both sports)
+Both `FootballGame` and `BaseballGame` have a `status: str` field (default `"active"`).
+The UI currently uses `"active"` and `"final"`. The field is a free string — any value is
+accepted. The frontend reads it to show `FINAL` labels or style the display accordingly.
 
 ---
 
