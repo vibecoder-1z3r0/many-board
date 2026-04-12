@@ -84,6 +84,7 @@ class FootballGame(SQLModel, table=True):
     pat: PAT | None = Field(default=None)
     # ot_enabled: OT column/button only shown when explicitly activated
     ot_enabled: bool = Field(default=False)
+    status: str = Field(default="active")
     # Naive UTC datetimes — SQLite does not preserve timezone info
     created_at: datetime = Field(default_factory=_utcnow)
     updated_at: datetime = Field(default_factory=_utcnow)
@@ -122,5 +123,6 @@ class FootballGameRead(SQLModel):
     no_run_zone: bool
     pat: PAT | None
     ot_enabled: bool
+    status: str
     created_at: datetime
     updated_at: datetime

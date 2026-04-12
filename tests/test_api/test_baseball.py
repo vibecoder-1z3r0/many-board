@@ -27,6 +27,24 @@ def test_create_baseball_game_defaults(client: TestClient) -> None:
     assert len(data["scores"]["away"]) == 6
     assert len(data["scores"]["home"]) == 6
     assert all(s is None for s in data["scores"]["away"])
+    # Stats default to zero
+    for team in ("home", "away"):
+        for stat in (
+            "strikeouts",
+            "lob",
+            "errors",
+            "singles",
+            "doubles",
+            "triples",
+            "hrs",
+            "hits",
+        ):
+            assert data[f"{team}_{stat}"] == 0, f"{team}_{stat} should default to 0"
+    # Batting order defaults
+    assert data["at_bat"] == ""
+    assert data["next_up"] == ""
+    assert data["at_bat_visible"] is True
+    assert data["next_up_visible"] is True
     assert "id" in data
     assert "scores_json" not in data
 
@@ -338,6 +356,219 @@ def test_set_current_inning(client: TestClient) -> None:
     data = resp.json()
     assert data["current_inning"] == 3
     assert data["half"] == "bottom"
+
+
+# ── run with delta ───────────────────────────────────────────────────────────
+
+
+def test_run_with_positive_delta(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(f"/api/baseball/games/{game_id}/run", json={"delta": 3})
+    assert resp.status_code == 200
+    assert resp.json()["scores"]["away"][0] == 3
+
+
+def test_run_with_negative_delta_decrements(client: TestClient) -> None:
+    game_id = _new_game(client)
+    client.patch(f"/api/baseball/games/{game_id}/run", json={"delta": 2})
+    resp = client.patch(f"/api/baseball/games/{game_id}/run", json={"delta": -1})
+    assert resp.status_code == 200
+    assert resp.json()["scores"]["away"][0] == 1
+
+
+def test_run_floors_at_zero(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(f"/api/baseball/games/{game_id}/run", json={"delta": -5})
+    assert resp.status_code == 200
+    assert resp.json()["scores"]["away"][0] == 0
+
+
+# ── inning-score dash case ────────────────────────────────────────────────────
+
+
+def test_inning_score_dash(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(
+        f"/api/baseball/games/{game_id}/inning-score",
+        json={"inning": 1, "half": "bottom", "runs": None},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["scores"]["home"][0] == "-"
+
+
+# ── Stats ─────────────────────────────────────────────────────────────────────
+
+
+def test_stat_increment_batting_team(client: TestClient) -> None:
+    game_id = _new_game(client)  # half=top → away is batting
+    resp = client.patch(
+        f"/api/baseball/games/{game_id}/stat",
+        json={"team": "away", "stat": "singles", "delta": 1},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["away_singles"] == 1
+    assert data["away_hits"] == 1
+
+
+def test_stat_increment_doubles(client: TestClient) -> None:
+    game_id = _new_game(client)
+    client.patch(
+        f"/api/baseball/games/{game_id}/stat",
+        json={"team": "away", "stat": "doubles", "delta": 1},
+    )
+    client.patch(
+        f"/api/baseball/games/{game_id}/stat",
+        json={"team": "away", "stat": "doubles", "delta": 1},
+    )
+    data = client.get(f"/api/baseball/games/{game_id}").json()
+    assert data["away_doubles"] == 2
+    assert data["away_hits"] == 2
+
+
+def test_stat_hits_computed_from_all_hit_types(client: TestClient) -> None:
+    game_id = _new_game(client)
+    for stat in ("singles", "doubles", "triples", "hrs"):
+        client.patch(
+            f"/api/baseball/games/{game_id}/stat",
+            json={"team": "home", "stat": stat, "delta": 1},
+        )
+    data = client.get(f"/api/baseball/games/{game_id}").json()
+    assert data["home_hits"] == 4
+
+
+def test_stat_decrement(client: TestClient) -> None:
+    game_id = _new_game(client)
+    client.patch(
+        f"/api/baseball/games/{game_id}/stat",
+        json={"team": "home", "stat": "strikeouts", "delta": 3},
+    )
+    resp = client.patch(
+        f"/api/baseball/games/{game_id}/stat",
+        json={"team": "home", "stat": "strikeouts", "delta": -1},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["home_strikeouts"] == 2
+
+
+def test_stat_floors_at_zero(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(
+        f"/api/baseball/games/{game_id}/stat",
+        json={"team": "away", "stat": "errors", "delta": -99},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["away_errors"] == 0
+
+
+def test_stat_errors_for_fielding_team(client: TestClient) -> None:
+    game_id = _new_game(client)  # top → away batting, home fielding
+    client.patch(
+        f"/api/baseball/games/{game_id}/stat",
+        json={"team": "home", "stat": "errors", "delta": 1},
+    )
+    data = client.get(f"/api/baseball/games/{game_id}").json()
+    assert data["home_errors"] == 1
+    assert data["away_errors"] == 0
+
+
+def test_stat_invalid_team_rejected(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(
+        f"/api/baseball/games/{game_id}/stat",
+        json={"team": "both", "stat": "singles", "delta": 1},
+    )
+    assert resp.status_code == 422
+
+
+def test_stat_invalid_stat_name_rejected(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(
+        f"/api/baseball/games/{game_id}/stat",
+        json={"team": "home", "stat": "stolen_bases", "delta": 1},
+    )
+    assert resp.status_code == 422
+
+
+def test_stat_all_types(client: TestClient) -> None:
+    game_id = _new_game(client)
+    for stat in ("singles", "doubles", "triples", "hrs", "strikeouts", "lob", "errors"):
+        resp = client.patch(
+            f"/api/baseball/games/{game_id}/stat",
+            json={"team": "away", "stat": stat, "delta": 1},
+        )
+        assert resp.status_code == 200, f"/stat failed for stat={stat}"
+
+
+# ── Batting order ─────────────────────────────────────────────────────────────
+
+
+def test_batting_set_at_bat_and_next_up(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(
+        f"/api/baseball/games/{game_id}/batting",
+        json={"at_bat": "Johnny #7", "next_up": "Tommy #3"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["at_bat"] == "Johnny #7"
+    assert data["next_up"] == "Tommy #3"
+
+
+def test_batting_partial_update(client: TestClient) -> None:
+    game_id = _new_game(client)
+    client.patch(f"/api/baseball/games/{game_id}/batting", json={"at_bat": "Johnny"})
+    resp = client.patch(
+        f"/api/baseball/games/{game_id}/batting", json={"next_up": "Tommy"}
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["at_bat"] == "Johnny"
+    assert data["next_up"] == "Tommy"
+
+
+def test_batting_visibility_default_true(client: TestClient) -> None:
+    game_id = _new_game(client)
+    data = client.get(f"/api/baseball/games/{game_id}").json()
+    assert data["at_bat_visible"] is True
+    assert data["next_up_visible"] is True
+
+
+def test_batting_hide_at_bat(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(
+        f"/api/baseball/games/{game_id}/batting", json={"at_bat_visible": False}
+    )
+    assert resp.status_code == 200
+    assert resp.json()["at_bat_visible"] is False
+    assert resp.json()["next_up_visible"] is True  # untouched
+
+
+def test_batting_toggle_visibility_back_on(client: TestClient) -> None:
+    game_id = _new_game(client)
+    client.patch(
+        f"/api/baseball/games/{game_id}/batting", json={"at_bat_visible": False}
+    )
+    resp = client.patch(
+        f"/api/baseball/games/{game_id}/batting", json={"at_bat_visible": True}
+    )
+    assert resp.status_code == 200
+    assert resp.json()["at_bat_visible"] is True
+
+
+def test_batting_clear_names(client: TestClient) -> None:
+    game_id = _new_game(client)
+    client.patch(
+        f"/api/baseball/games/{game_id}/batting",
+        json={"at_bat": "Johnny", "next_up": "Tommy"},
+    )
+    resp = client.patch(
+        f"/api/baseball/games/{game_id}/batting", json={"at_bat": "", "next_up": ""}
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["at_bat"] == ""
+    assert data["next_up"] == ""
 
 
 # ── Score correction (negative runs) ─────────────────────────────────────────

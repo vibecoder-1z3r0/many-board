@@ -485,6 +485,112 @@ def test_get_computes_game_clock_while_running(client: TestClient) -> None:
 # ── Delete ───────────────────────────────────────────────────────────────────
 
 
+# ── PAT ──────────────────────────────────────────────────────────────────────
+
+
+def test_pat_set_one_point(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(f"/api/football/games/{game_id}/pat", json={"pat": "1pt"})
+    assert resp.status_code == 200
+    assert resp.json()["pat"] == "1pt"
+
+
+def test_pat_set_two_point(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(f"/api/football/games/{game_id}/pat", json={"pat": "2pt"})
+    assert resp.status_code == 200
+    assert resp.json()["pat"] == "2pt"
+
+
+def test_pat_clear(client: TestClient) -> None:
+    game_id = _new_game(client)
+    client.patch(f"/api/football/games/{game_id}/pat", json={"pat": "1pt"})
+    resp = client.patch(f"/api/football/games/{game_id}/pat", json={"pat": None})
+    assert resp.status_code == 200
+    assert resp.json()["pat"] is None
+
+
+# ── OT ────────────────────────────────────────────────────────────────────────
+
+
+def test_ot_enable(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(f"/api/football/games/{game_id}/ot", json={"enabled": True})
+    assert resp.status_code == 200
+    assert resp.json()["ot_enabled"] is True
+
+
+def test_ot_disable(client: TestClient) -> None:
+    game_id = _new_game(client)
+    client.patch(f"/api/football/games/{game_id}/ot", json={"enabled": True})
+    resp = client.patch(f"/api/football/games/{game_id}/ot", json={"enabled": False})
+    assert resp.status_code == 200
+    assert resp.json()["ot_enabled"] is False
+
+
+def test_ot_disabled_by_default(client: TestClient) -> None:
+    game_id = _new_game(client)
+    data = client.get(f"/api/football/games/{game_id}").json()
+    assert data["ot_enabled"] is False
+
+
+# ── Play clock default ────────────────────────────────────────────────────────
+
+
+def test_set_play_clock_default(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(
+        f"/api/football/games/{game_id}/play-clock/default", json={"seconds": 25}
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["play_clock_default"] == 25
+    assert data["play_clock"] == 25  # idle clock updated too
+
+
+def test_set_play_clock_default_does_not_override_running_clock(
+    client: TestClient,
+) -> None:
+    game_id = _new_game(client)
+    client.patch(f"/api/football/games/{game_id}/play-clock/start")
+    resp = client.patch(
+        f"/api/football/games/{game_id}/play-clock/default", json={"seconds": 20}
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["play_clock_default"] == 20
+    assert data["play_clock_running"] is True  # still running
+
+
+def test_play_clock_default_must_be_positive(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(
+        f"/api/football/games/{game_id}/play-clock/default", json={"seconds": 0}
+    )
+    assert resp.status_code == 422
+
+
+# ── Status ───────────────────────────────────────────────────────────────────
+
+
+def test_set_football_game_status(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(
+        f"/api/football/games/{game_id}/status", json={"status": "final"}
+    )
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "final"
+
+
+def test_football_game_status_defaults_active(client: TestClient) -> None:
+    game_id = _new_game(client)
+    data = client.get(f"/api/football/games/{game_id}").json()
+    assert data["status"] == "active"
+
+
+# ── Delete ───────────────────────────────────────────────────────────────────
+
+
 def test_delete_football_game(client: TestClient) -> None:
     game_id = _new_game(client)
     resp = client.delete(f"/api/football/games/{game_id}")

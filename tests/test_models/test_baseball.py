@@ -23,6 +23,23 @@ def test_baseball_game_defaults() -> None:
     assert game.base_third is False
     assert game.bso_style == BSOStyle.DOTS
     assert game.status == "active"
+    # Stats default to zero
+    for team in ("home", "away"):
+        for stat in (
+            "strikeouts",
+            "lob",
+            "errors",
+            "singles",
+            "doubles",
+            "triples",
+            "hrs",
+        ):
+            assert getattr(game, f"{team}_{stat}") == 0
+    # Batting order defaults
+    assert game.at_bat == ""
+    assert game.next_up == ""
+    assert game.at_bat_visible is True
+    assert game.next_up_visible is True
 
 
 def test_baseball_game_create_schema_defaults() -> None:

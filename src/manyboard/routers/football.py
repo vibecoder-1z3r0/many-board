@@ -74,6 +74,10 @@ class TeamNamesUpdate(BaseModel):
     away_team: str | None = None
 
 
+class StatusUpdate(BaseModel):
+    status: str
+
+
 class ClockSet(BaseModel):
     """Set a clock to a specific value (stops it)."""
 
@@ -458,6 +462,15 @@ def set_play_clock_default(
     if not game.play_clock_running:
         game.play_clock = update.seconds
         game.play_clock_started_at = None
+    return _to_read(_save(game, session))
+
+
+@router.patch("/{game_id}/status")
+def set_status(
+    game_id: str, update: StatusUpdate, session: SessionDep
+) -> FootballGameRead:
+    game = _get_game(game_id, session)
+    game.status = update.status
     return _to_read(_save(game, session))
 
 
