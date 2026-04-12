@@ -4,6 +4,9 @@ Backyard sports scoreboard. FastAPI + SQLite backend, vanilla HTML/JS frontend.
 Designed to run on a local network (Raspberry Pi or similar) and be viewed on
 phones/tablets at the field.
 
+See **[ADDING_A_SPORT.md](./ADDING_A_SPORT.md)** for the step-by-step guide to
+implementing a new sport.
+
 ---
 
 ## Stack
