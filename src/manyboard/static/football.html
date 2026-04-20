@@ -1081,6 +1081,7 @@
         { label: state.away_team, key: 'away', total: state.away_score, poss: state.possession === 'away' },
         { label: state.home_team, key: 'home', total: state.home_score, poss: state.possession === 'home' },
       ];
+      const dirPrefix = state.drive_direction === 'left' ? '◀ ' : state.drive_direction === 'right' ? '▶ ' : '· ';
       tbody.innerHTML = rows.map(r => {
         const finalized = hs[r.key].reduce((sum, v) => sum + (v ?? 0), 0);
         const liveHalf  = r.total - finalized;
@@ -1091,16 +1092,15 @@
           return `<td class="empty-col"></td>`;
         }).join('');
         return `<tr>
-          <td class="team-col${r.poss ? ' has-ball' : ''}">${r.poss ? '▶ ' : ''}${r.label.toUpperCase()}</td>
+          <td class="team-col${r.poss ? ' has-ball' : ''}">${r.poss ? dirPrefix : ''}${r.label.toUpperCase()}</td>
           ${cells}
           <td class="total-col">${r.total}</td>
         </tr>`;
       }).join('');
 
-      const bsDirArrow = state.drive_direction === 'left' ? '◀' : state.drive_direction === 'right' ? '▶' : '';
-      setText('bs-poss-arrow', bsDirArrow);
+      setText('bs-poss-arrow', '');
       const possTeam = state.possession === 'away' ? state.away_team : state.home_team;
-      setText('bs-poss-label', `${possTeam} ball${bsDirArrow ? ' ' + bsDirArrow : ''}`);
+      setText('bs-poss-label', `${possTeam} ball`);
       setText('bs-away-to-name', state.away_team);
       setText('bs-home-to-name', state.home_team);
       renderDots('bs-away-timeouts', state.away_timeouts, 'd-timeout-dot', 3);
