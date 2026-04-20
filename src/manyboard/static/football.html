@@ -833,14 +833,12 @@
 
   <!-- ── GAME CLOCK VIEW ──────────────────────────────── -->
   <div class="view" id="view-gameclock">
-    <div class="clock-teams" id="gck-teams"></div>
     <div class="clock-big" id="gck-clock"></div>
     <div class="clock-label" id="gck-half"></div>
   </div>
 
   <!-- ── PLAY CLOCK VIEW ──────────────────────────────── -->
   <div class="view" id="view-playclock">
-    <div class="clock-teams" id="pck-teams"></div>
     <div class="clock-big" id="pck-clock"></div>
     <div class="clock-label">PLAY CLOCK</div>
   </div>
@@ -1140,13 +1138,11 @@
         ot:'Overtime', final:'Final'
       };
       renderClockElements();
-      setText('gck-teams', `${state.home_team} ${state.home_score} – ${state.away_score} ${state.away_team}`);
       setText('gck-half', halfMap[state.half] || state.half);
     }
 
     function renderPlayClockView() {
       renderClockElements();
-      setText('pck-teams', `${state.home_team} ${state.home_score} – ${state.away_score} ${state.away_team}`);
     }
 
     function renderRef() {
