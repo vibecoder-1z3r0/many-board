@@ -742,6 +742,16 @@
       </div>
     </div>
 
+    <!-- Drive Direction -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">Drive Direction</div>
+      <div class="ctrl-row">
+        <button class="btn-state" id="ctrl-dir-left"  onclick="setDriveDirection('left')">◀ Left</button>
+        <button class="btn-state" id="ctrl-dir-none"  onclick="setDriveDirection(null)">—</button>
+        <button class="btn-state" id="ctrl-dir-right" onclick="setDriveDirection('right')">Right ▶</button>
+      </div>
+    </div>
+
     <!-- Timeouts -->
     <div class="ctrl-section">
       <div class="ctrl-header">Timeouts</div>
@@ -900,6 +910,16 @@
       </div>
     </div>
 
+    <!-- Drive Direction -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">Drive Direction</div>
+      <div class="ctrl-row">
+        <button class="btn btn-state" id="ref-dir-left"  onclick="setDriveDirection('left')">◀ Left</button>
+        <button class="btn btn-state" id="ref-dir-none"  onclick="setDriveDirection(null)">—</button>
+        <button class="btn btn-state" id="ref-dir-right" onclick="setDriveDirection('right')">Right ▶</button>
+      </div>
+    </div>
+
   </div>
 
   <script>
@@ -1038,7 +1058,8 @@
 
       document.getElementById('d-away-name')?.classList.toggle('has-ball', state.possession === 'away');
       document.getElementById('d-home-name')?.classList.toggle('has-ball', state.possession === 'home');
-      setText('d-poss-arrow', state.possession === 'away' ? '←' : '→');
+      const dirArrow = state.drive_direction === 'left' ? '←' : state.drive_direction === 'right' ? '→' : '';
+      setText('d-poss-arrow', dirArrow);
 
       renderDots('d-away-timeouts', state.away_timeouts, 'd-timeout-dot', 3);
       renderDots('d-home-timeouts', state.home_timeouts, 'd-timeout-dot', 3);
@@ -1076,9 +1097,10 @@
         </tr>`;
       }).join('');
 
-      setText('bs-poss-arrow', state.possession === 'away' ? '◀' : '▶');
-      setText('bs-poss-label',
-        `${state.possession === 'away' ? state.away_team : state.home_team} ball`);
+      const bsDirArrow = state.drive_direction === 'left' ? '◀' : state.drive_direction === 'right' ? '▶' : '';
+      setText('bs-poss-arrow', bsDirArrow);
+      const possTeam = state.possession === 'away' ? state.away_team : state.home_team;
+      setText('bs-poss-label', `${possTeam} ball${bsDirArrow ? ' ' + bsDirArrow : ''}`);
       setText('bs-away-to-name', state.away_team);
       setText('bs-home-to-name', state.home_team);
       renderDots('bs-away-timeouts', state.away_timeouts, 'd-timeout-dot', 3);
@@ -1131,6 +1153,11 @@
       document.getElementById('nrz-btn')?.classList.toggle('active', state.no_run_zone);
       document.getElementById('pat-1pt-btn')?.classList.toggle('active', state.pat === '1pt');
       document.getElementById('pat-2pt-btn')?.classList.toggle('active', state.pat === '2pt');
+
+      ['left', 'none', 'right'].forEach(d => {
+        const val = d === 'none' ? null : d;
+        document.getElementById('ctrl-dir-' + d)?.classList.toggle('active', state.drive_direction === val);
+      });
     }
 
     function renderGameClockView() {
@@ -1166,6 +1193,11 @@
       const rh = document.getElementById('ref-poss-home');
       if (ra) { ra.textContent = state.away_team; ra.classList.toggle('active', state.possession === 'away'); }
       if (rh) { rh.textContent = state.home_team; rh.classList.toggle('active', state.possession === 'home'); }
+
+      ['left', 'none', 'right'].forEach(d => {
+        const val = d === 'none' ? null : d;
+        document.getElementById('ref-dir-' + d)?.classList.toggle('active', state.drive_direction === val);
+      });
     }
 
     // ── API helpers ──────────────────────────────────────
@@ -1193,6 +1225,7 @@
     async function toggleNRZ()  { if (state) await patch('no-run-zone', { enabled: !state.no_run_zone }); }
     async function setPAT(val)  { await patch('pat', { pat: val }); }
     async function toggleOT()   { if (state) await patch('ot', { enabled: !state.ot_enabled }); }
+    async function setDriveDirection(dir) { await patch('drive-direction', { direction: dir }); }
 
     async function setHalfScore() {
       const half   = document.getElementById('corr-half').value;

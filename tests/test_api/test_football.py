@@ -669,6 +669,45 @@ def test_half_score_invalid_team_rejected(client: TestClient) -> None:
     assert resp.status_code == 422
 
 
+# ── Drive direction ──────────────────────────────────────────────────────────
+
+
+def test_drive_direction_defaults_null(client: TestClient) -> None:
+    game_id = _new_game(client)
+    data = client.get(f"/api/football/games/{game_id}").json()
+    assert data["drive_direction"] is None
+
+
+def test_set_drive_direction_left(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(
+        f"/api/football/games/{game_id}/drive-direction", json={"direction": "left"}
+    )
+    assert resp.status_code == 200
+    assert resp.json()["drive_direction"] == "left"
+
+
+def test_set_drive_direction_right(client: TestClient) -> None:
+    game_id = _new_game(client)
+    resp = client.patch(
+        f"/api/football/games/{game_id}/drive-direction", json={"direction": "right"}
+    )
+    assert resp.status_code == 200
+    assert resp.json()["drive_direction"] == "right"
+
+
+def test_clear_drive_direction(client: TestClient) -> None:
+    game_id = _new_game(client)
+    client.patch(
+        f"/api/football/games/{game_id}/drive-direction", json={"direction": "left"}
+    )
+    resp = client.patch(
+        f"/api/football/games/{game_id}/drive-direction", json={"direction": None}
+    )
+    assert resp.status_code == 200
+    assert resp.json()["drive_direction"] is None
+
+
 # ── Clock auto-stop at zero ───────────────────────────────────────────────────
 
 

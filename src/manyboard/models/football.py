@@ -48,6 +48,11 @@ class PAT(StrEnum):
     TWO = "2pt"
 
 
+class DriveDirection(StrEnum):
+    LEFT = "left"
+    RIGHT = "right"
+
+
 # HalfScores[team] = [1H, 2H, OT], each int | None
 HalfScores = dict[str, list[int | None]]
 
@@ -82,6 +87,8 @@ class FootballGame(SQLModel, table=True):
     no_run_zone: bool = Field(default=False)
     # PAT: point-after-touchdown attempt marker (null = normal down, 1pt/2pt = PAT mode)
     pat: PAT | None = Field(default=None)
+    # drive_direction: which way the offense is driving (independent of possession)
+    drive_direction: DriveDirection | None = Field(default=None)
     # ot_enabled: OT column/button only shown when explicitly activated
     ot_enabled: bool = Field(default=False)
     status: str = Field(default="active")
@@ -122,6 +129,7 @@ class FootballGameRead(SQLModel):
     play_clock_running: bool
     no_run_zone: bool
     pat: PAT | None
+    drive_direction: DriveDirection | None
     ot_enabled: bool
     status: str
     created_at: datetime

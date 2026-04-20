@@ -13,6 +13,7 @@ from manyboard.models.football import (
     PAT,
     Distance,
     Down,
+    DriveDirection,
     FootballGame,
     FootballGameCreate,
     FootballGameRead,
@@ -41,6 +42,10 @@ class DownUpdate(BaseModel):
 
 class PossessionUpdate(BaseModel):
     possession: Possession
+
+
+class DriveDirectionUpdate(BaseModel):
+    direction: DriveDirection | None
 
 
 class TeamUpdate(BaseModel):
@@ -260,6 +265,15 @@ def update_possession(
 ) -> FootballGameRead:
     game = _get_game(game_id, session)
     game.possession = update.possession
+    return _to_read(_save(game, session))
+
+
+@router.patch("/{game_id}/drive-direction")
+def update_drive_direction(
+    game_id: str, update: DriveDirectionUpdate, session: SessionDep
+) -> FootballGameRead:
+    game = _get_game(game_id, session)
+    game.drive_direction = update.direction
     return _to_read(_save(game, session))
 
 
