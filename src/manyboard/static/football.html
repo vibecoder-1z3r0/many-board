@@ -1102,8 +1102,8 @@
 
       const ph = document.getElementById('poss-home');
       const pa = document.getElementById('poss-away');
-      if (ph) { ph.textContent = '← ' + state.home_team; ph.classList.toggle('active', state.possession === 'home'); }
-      if (pa) { pa.textContent = state.away_team + ' →'; pa.classList.toggle('active', state.possession === 'away'); }
+      if (ph) { ph.textContent = state.home_team; ph.classList.toggle('active', state.possession === 'home'); }
+      if (pa) { pa.textContent = state.away_team; pa.classList.toggle('active', state.possession === 'away'); }
 
       setText('c-home-to-label', state.home_team);
       setText('c-away-to-label', state.away_team);
