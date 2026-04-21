@@ -64,6 +64,7 @@ src/manyboard/
     index.html              # Game list / lobby (polls every 1s)
     football.html           # Live football scoreboard (polls every 200ms)
     baseball.html           # Live baseball scoreboard (polls every 200ms)
+    favicon.svg             # SVG favicon (served as /favicon.svg)
 
 tests/
   test_api/
@@ -191,11 +192,12 @@ SECOND→OT snapshots 2H score; OT→FINAL snapshots OT score.
 | PATCH | `/{id}/batting` | Set at-bat / next-up text and visibility |
 
 Stats (`stat` field values): `singles`, `doubles`, `triples`, `hrs`, `strikeouts`, `lob`, `errors`.
-`team` is `"home"` or `"away"`. `errors` should be posted to the **fielding** team.
+`team` is `"home"` or `"away"`. `errors` and `strikeouts` should be posted to the **fielding** team.
 `home_hits` / `away_hits` are computed in `_to_read` (sum of 1B+2B+3B+HR) and returned read-only.
+`home_errors` / `away_errors` are stored directly and also returned in Read.
 
 `batting` fields: `at_bat` (str), `next_up` (str), `at_bat_visible` (bool), `next_up_visible` (bool).
-All optional — only supplied fields are updated. Box Score view renders banners when visible and non-empty.
+All optional — only supplied fields are updated. Modern view renders banners when visible and non-empty.
 
 ### Status field (both sports)
 Both `FootballGame` and `BaseballGame` have a `status: str` field (default `"active"`).
@@ -215,7 +217,7 @@ accepted. The frontend reads it to show `FINAL` labels or style the display acco
 - Theme is stored in `localStorage` under key `mbTheme`; a `<select>` in every
   header calls `applyTheme(t)` which sets `data-theme` on `<html>` and syncs
   the select. Three themes: `default` (navy/crimson), `stadium` (black/cyan),
-  `field` (dark green/gold).
+  `field` (dark green/orange).
 - Colors use CSS custom properties (`--bg`, `--panel`, `--accent`, etc.) defined
   in `:root` with overrides for `[data-theme="stadium"]` and
   `[data-theme="field"]`.
@@ -224,6 +226,24 @@ accepted. The frontend reads it to show `FINAL` labels or style the display acco
   orange `#f39c12`, foul `#e67e22`, connected green `#2ecc71`.
 - Display views use `clamp(min, preferred, max)` for font sizes and spacing so
   they scale naturally from phones to tablets without media queries.
+
+### Theme-specific view overrides
+
+Views that have a sport-specific aesthetic (e.g. the baseball Scoreboard tab
+which mimics a Fenway-style manual scoreboard) should use CSS vars by default
+so they inherit the current theme, and add `[data-theme="field"]`-scoped
+overrides for the cases where the theme naturally matches the sport aesthetic:
+
+```css
+/* Default: use app theme vars */
+.fw-board { background: var(--panel); color: var(--text); }
+
+/* Field theme: override to Fenway green palette */
+[data-theme="field"] .fw-board { background: #2d5a1b; color: #f5e6c8; }
+```
+
+This keeps the view usable in all themes while looking purpose-built in the
+most thematically appropriate one.
 
 ### View conventions per sport
 
@@ -244,9 +264,12 @@ game).
 **Baseball (`baseball.html`)**
 | Tab | Purpose |
 |-----|---------|
-| Box Score | Inning-by-inning table, BSO indicators, base diamond |
-| Ump | Field ump: pitch calls (B/S/F/Out), score +1/−1, bases, change sides |
-| Control | Scorekeeper: score correction, inning nav (add/remove/jump), BSO display style, team names, game status |
+| Scoreboard | Manual Fenway-style inning-by-inning scoreboard (display, field-appropriate) |
+| Modern | Digital inning-by-inning table with R/H/E columns, BSO indicators, base diamond |
+| Ump | Field ump: pitch calls (B/S/Out), score +1/−1, bases, change sides, hit/stat buttons |
+| Control | Scorekeeper: score correction, inning nav (add/remove/jump), BSO display style (Modern View), team names, game status |
+
+Baseball index cards link to both `?view=scoreboard` and `?view=modern` plus Ump and Control.
 
 ---
 

@@ -379,13 +379,17 @@ setInterval(poll, 200);
 
 | Tab | Type | Audience |
 |-----|------|---------|
-| Display | display | Spectators / field screen |
-| Box Score | display | Spectators / field screen |
+| Display / Scoreboard | display | Spectators / field screen |
+| Box Score / Modern | display | Spectators / field screen |
 | Control | operator | Scorekeeper (admin, score correction, settings) |
 | Ref / Ump | operator | On-field official (fast actions only) |
 
 The Ref/Ump view should show **only what an on-field official needs in the
 moment** — not score correction, team names, or settings. Those go in Control.
+
+You may have multiple display views with different aesthetics. Baseball has a
+Fenway-style manual scoreboard (`view=scoreboard`) and a digital table
+(`view=modern`). Both are display-only. The index page links to both.
 
 ### CSS custom properties (do not rename these)
 
@@ -407,6 +411,48 @@ Sport-semantic colors are **hardcoded** (not themed):
 - Out/penalty: `var(--accent)` (already themed)
 - Connected: `#2ecc71`
 
+### Theme-specific view overrides
+
+If a display view has a sport-specific aesthetic (e.g. a manual scoreboard
+that looks like Fenway's green hand-operated board), use CSS vars by default
+so it works in all themes, then add `[data-theme="field"]` overrides where
+the theme naturally matches:
+
+```css
+/* Default: inherit app theme */
+.my-board { background: var(--panel); color: var(--text); border-color: var(--border); }
+
+/* Field theme: override to sport-appropriate palette */
+[data-theme="field"] .my-board { background: #2d5a1b; color: #f5e6c8; border-color: #4a7a35; }
+```
+
+This ensures the view is always usable and looks purpose-built in the most
+thematically appropriate theme.
+
+### Stat routing: batting vs. fielding team
+
+When a sport has per-team stats that are credited to the *opposing* team from
+the action (e.g. strikeouts belong to the pitching/fielding team, not the
+batter), use a `_fieldingTeam()` helper:
+
+```javascript
+function _battingTeam()  { return state.half === 'top' ? 'away' : 'home'; }
+function _fieldingTeam() { return state.half === 'top' ? 'home' : 'away'; }
+
+async function recordBattingStat(stat, delta=1) {
+  if (!state) return;
+  await api('stat', { team: _battingTeam(), stat, delta });
+}
+async function recordFieldingStat(stat, delta=1) {
+  if (!state) return;
+  await api('stat', { team: _fieldingTeam(), stat, delta });
+}
+```
+
+Rule of thumb: **hits and runs** go to the batting team; **strikeouts and errors**
+go to the fielding team. Document this explicitly in your sport's Control view
+UI labels so operators don't have to guess.
+
 ---
 
 ## 5. Index page (`static/index.html`)
@@ -414,7 +460,14 @@ Sport-semantic colors are **hardcoded** (not themed):
 Add a card section for the new sport. Each card shows active games and a
 "New Game" button. Links should point to `/{sport}.html?game={id}&view=display`
 (or whatever the primary display view is called). Include links to all relevant
-operator views (Control, Ref/Ump) on each card.
+views — display views, operator views (Control, Ref/Ump) — on each card.
+
+If the sport has per-game summary stats worth showing at a glance (e.g. R/H/E
+for baseball), render them inline in the card's score table. The values come
+from the list API response directly (no extra fetch).
+
+Add `<link rel="icon" href="/favicon.svg" type="image/svg+xml">` to `<head>`
+if not already present.
 
 ---
 
