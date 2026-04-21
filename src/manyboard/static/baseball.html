@@ -172,6 +172,14 @@
       border-left: 1px solid var(--border) !important;
     }
     .bs-divider { border-left: 1px solid var(--border); }
+    .bs-rhe {
+      font-size: clamp(16px, 3vh, 24px);
+      font-weight: 700;
+      color: var(--text-dim);
+      text-align: center;
+      padding: 5px 10px;
+      border-left: 1px solid var(--border);
+    }
 
     /* Status row */
     .bs-status {
@@ -660,15 +668,15 @@
             <td class="bs-team-name" id="bs-away-name"></td>
             <!-- scores injected -->
             <td class="bs-total" id="bs-away-total"></td>
-            <td class="bs-total" id="bs-away-hits-val"></td>
-            <td class="bs-total" id="bs-away-errors-val"></td>
+            <td class="bs-rhe"   id="bs-away-hits-val"></td>
+            <td class="bs-rhe"   id="bs-away-errors-val"></td>
           </tr>
           <tr id="bs-home-row">
             <td class="bs-team-name" id="bs-home-name"></td>
             <!-- scores injected -->
             <td class="bs-total" id="bs-home-total"></td>
-            <td class="bs-total" id="bs-home-hits-val"></td>
-            <td class="bs-total" id="bs-home-errors-val"></td>
+            <td class="bs-rhe"   id="bs-home-hits-val"></td>
+            <td class="bs-rhe"   id="bs-home-errors-val"></td>
           </tr>
         </tbody>
       </table>
