@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Background: deep navy -->
+  <rect width="32" height="32" rx="5" fill="#1a1a2e"/>
+
+  <!-- Scoreboard panel -->
+  <rect x="2" y="5" width="28" height="22" rx="3" fill="#16213e"/>
+  <rect x="2" y="5" width="28" height="22" rx="3" fill="none" stroke="#0f3460" stroke-width="1.2"/>
+
+  <!-- Team color bars -->
+  <rect x="4" y="7" width="10" height="2.5" rx="1.2" fill="#e94560"/>
+  <rect x="18" y="7" width="10" height="2.5" rx="1.2" fill="#4fc3f7"/>
+
+  <!-- Center divider -->
+  <rect x="14.5" y="7" width="3" height="18" rx="1.5" fill="#0f3460"/>
+
+  <!-- Home score -->
+  <text x="9" y="24"
+    font-family="Impact, 'Arial Black', sans-serif"
+    font-size="16"
+    fill="#e94560"
+    text-anchor="middle">7</text>
+
+  <!-- Away score -->
+  <text x="23" y="24"
+    font-family="Impact, 'Arial Black', sans-serif"
+    font-size="16"
+    fill="#4fc3f7"
+    text-anchor="middle">0</text>
+</svg>
