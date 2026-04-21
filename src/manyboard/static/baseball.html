@@ -443,6 +443,125 @@
     .batting-input:focus { border-color: var(--accent); }
     .vis-btn { font-size: 11px; padding: 4px 8px; }
     .vis-btn.hidden-state { border-color: var(--text-dimmer); color: var(--text-dimmer); }
+
+    /* ════════════════════════════════════════════════════════
+       FENWAY (MANUAL SCOREBOARD) VIEW
+    ════════════════════════════════════════════════════════ */
+    #view-fenway {
+      background: #182818;
+      align-items: stretch;
+      justify-content: flex-start;
+      padding: 0;
+      overflow: hidden;
+    }
+    .fw-board {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    .fw-table-wrap {
+      flex: 1;
+      overflow-x: auto;
+      display: flex;
+      align-items: center;
+    }
+    .fw-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'Arial Narrow', Arial, sans-serif;
+    }
+    .fw-table thead th {
+      background: #0e1e0e;
+      color: #8ab08a;
+      font-size: clamp(10px, 2.2vw, 20px);
+      font-weight: 700;
+      text-align: center;
+      padding: clamp(4px, 1vh, 10px) clamp(2px, 0.8vw, 8px);
+      border: 1px solid #2a4a2a;
+      letter-spacing: 1px;
+      min-width: clamp(28px, 5vw, 56px);
+    }
+    .fw-table thead th.fw-team-hdr {
+      text-align: left;
+      padding-left: clamp(10px, 2vw, 20px);
+      min-width: clamp(70px, 11vw, 140px);
+    }
+    .fw-table thead th.fw-rhe-hdr {
+      color: #f5c518;
+      border-left: 3px solid #3a6a3a;
+      min-width: clamp(34px, 5.5vw, 64px);
+    }
+    .fw-table thead th.fw-cur-hdr { color: #4fc3f7; }
+    .fw-table tbody td {
+      background: #0e1e0e;
+      color: #f0ead8;
+      font-size: clamp(28px, 7vw, 80px);
+      font-weight: 900;
+      text-align: center;
+      padding: clamp(8px, 2vh, 22px) clamp(2px, 0.8vw, 8px);
+      border: 1px solid #2a4a2a;
+      font-family: 'Arial Black', 'Impact', Arial, sans-serif;
+      line-height: 1;
+    }
+    .fw-table tbody td.fw-team-name {
+      text-align: left;
+      padding-left: clamp(10px, 2vw, 20px);
+      font-size: clamp(15px, 3.5vw, 40px);
+      letter-spacing: 2px;
+      background: #0a140a;
+      color: #f0ead8;
+    }
+    .fw-table tbody td.fw-cur { background: #1a3a1a; color: #ffffff; }
+    .fw-table tbody td.fw-empty { color: #2a4a2a; font-size: clamp(16px, 3.5vw, 40px); }
+    .fw-table tbody td.fw-dash { color: #6a9a6a; }
+    .fw-table tbody td.fw-rhe-val {
+      color: #f5c518;
+      background: #0a140a;
+      border-left: 3px solid #3a6a3a;
+    }
+    /* BSO footer */
+    .fw-bso-bar {
+      background: #0a140a;
+      border-top: 3px solid #3a6a3a;
+      display: flex;
+      align-items: center;
+      gap: clamp(20px, 5vw, 64px);
+      padding: clamp(8px, 1.5vh, 18px) clamp(14px, 3vw, 32px);
+      flex-shrink: 0;
+    }
+    .fw-bso-group {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: clamp(4px, 0.8vh, 8px);
+    }
+    .fw-bso-label {
+      font-size: clamp(8px, 1.6vw, 14px);
+      color: #6a9a6a;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .fw-bso-dots { display: flex; gap: clamp(4px, 1vw, 12px); }
+    .fw-dot {
+      width: clamp(11px, 2.4vw, 24px);
+      height: clamp(11px, 2.4vw, 24px);
+      border-radius: 50%;
+      background: #182818;
+      border: 1px solid #3a6a3a;
+    }
+    .fw-dot.ball-on   { background: #3498db; border-color: #3498db; box-shadow: 0 0 6px rgba(52,152,219,0.7); }
+    .fw-dot.strike-on { background: #f39c12; border-color: #f39c12; box-shadow: 0 0 6px rgba(243,156,18,0.7); }
+    .fw-dot.out-on    { background: #e94560; border-color: #e94560; box-shadow: 0 0 6px rgba(233,69,96,0.7); }
+    .fw-inning-badge {
+      margin-left: auto;
+      font-size: clamp(13px, 2.8vw, 24px);
+      font-weight: 700;
+      color: #4fc3f7;
+      letter-spacing: 1px;
+    }
   </style>
 </head>
 <body>
@@ -451,9 +570,10 @@
     <a href="/" class="brand">MANY BOARD</a>
     <span class="header-score" id="header-score"></span>
     <nav class="view-tabs">
-      <button class="tab-btn" id="tab-boxscore" onclick="switchView('boxscore')">Box Score</button>
-      <button class="tab-btn" id="tab-ump"      onclick="switchView('ump')">Ump</button>
-      <button class="tab-btn" id="tab-control"  onclick="switchView('control')">Control</button>
+      <button class="tab-btn" id="tab-scoreboard" onclick="switchView('scoreboard')">Scoreboard</button>
+      <button class="tab-btn" id="tab-boxscore"   onclick="switchView('boxscore')">Box Score</button>
+      <button class="tab-btn" id="tab-ump"         onclick="switchView('ump')">Ump</button>
+      <button class="tab-btn" id="tab-control"     onclick="switchView('control')">Control</button>
     </nav>
     <select id="theme-select" class="theme-select" onchange="applyTheme(this.value)" title="Switch theme">
       <option value="default">Default</option>
@@ -462,6 +582,48 @@
     </select>
     <span id="conn-status" class="conn-status connected"><span class="conn-dot"></span>Connected</span>
   </header>
+
+  <!-- ── FENWAY SCOREBOARD VIEW ───────────────────────── -->
+  <div class="view" id="view-scoreboard">
+    <div class="fw-board">
+      <div class="fw-table-wrap">
+        <table class="fw-table">
+          <thead>
+            <tr id="fw-header-row">
+              <th class="fw-team-hdr"></th>
+              <!-- inning headers inserted by JS -->
+              <th class="fw-rhe-hdr">R</th>
+              <th class="fw-rhe-hdr">H</th>
+              <th class="fw-rhe-hdr">E</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr id="fw-away-row">
+              <!-- cells inserted by JS -->
+            </tr>
+            <tr id="fw-home-row">
+              <!-- cells inserted by JS -->
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="fw-bso-bar">
+        <div class="fw-bso-group">
+          <span class="fw-bso-label">Ball</span>
+          <div class="fw-bso-dots" id="fw-balls"></div>
+        </div>
+        <div class="fw-bso-group">
+          <span class="fw-bso-label">Strike</span>
+          <div class="fw-bso-dots" id="fw-strikes"></div>
+        </div>
+        <div class="fw-bso-group">
+          <span class="fw-bso-label">Out</span>
+          <div class="fw-bso-dots" id="fw-outs"></div>
+        </div>
+        <div class="fw-inning-badge" id="fw-inning-badge"></div>
+      </div>
+    </div>
+  </div>
 
   <!-- ── BOX SCORE VIEW ────────────────────────────────── -->
   <div class="view" id="view-boxscore">
@@ -816,14 +978,66 @@
     function render() {
       if (!state) return;
       renderHeader();
-      if (view === 'boxscore')  renderBoxscore();
-      else if (view === 'ump')  renderUmp();
-      else if (view === 'control') renderControl();
+      if (view === 'scoreboard')   renderFenway();
+      else if (view === 'boxscore') renderBoxscore();
+      else if (view === 'ump')      renderUmp();
+      else if (view === 'control')  renderControl();
     }
 
     function renderHeader() {
       document.getElementById('header-score').textContent =
         `${state.away_team} ${state.away_total} – ${state.home_total} ${state.home_team}`;
+    }
+
+    // ── Fenway scoreboard ─────────────────────────────────
+    function renderFenway() {
+      const s = state;
+      const cur = s.current_inning;
+
+      // Header row: team-name col + inning numbers + R H E
+      document.getElementById('fw-header-row').innerHTML =
+        `<th class="fw-team-hdr"></th>` +
+        Array.from({length: s.num_innings}, (_, i) =>
+          `<th${(i + 1) === cur ? ' class="fw-cur-hdr"' : ''}>${i + 1}</th>`
+        ).join('') +
+        `<th class="fw-rhe-hdr">R</th><th class="fw-rhe-hdr">H</th><th class="fw-rhe-hdr">E</th>`;
+
+      // Build a score row for one team
+      const teamRow = (key, name) => {
+        const isAway = key === 'away';
+        const batting = (s.half === 'top' && isAway) || (s.half === 'bottom' && !isAway);
+        const cells = Array.from({length: s.num_innings}, (_, i) => {
+          const active = (i + 1) === cur && batting;
+          const v = s.scores[key][i];
+          if (v === null)  return active ? `<td class="fw-cur"> </td>` : `<td class="fw-empty">·</td>`;
+          if (v === '-')   return `<td class="fw-dash">—</td>`;
+          return `<td${active ? ' class="fw-cur"' : ''}>${v}</td>`;
+        }).join('');
+        const r = isAway ? s.away_total  : s.home_total;
+        const h = isAway ? s.away_hits   : s.home_hits;
+        const e = isAway ? s.away_errors : s.home_errors;
+        return `<td class="fw-team-name">${name.toUpperCase()}</td>${cells}` +
+               `<td class="fw-rhe-val">${r}</td><td class="fw-rhe-val">${h}</td><td class="fw-rhe-val">${e}</td>`;
+      };
+      document.getElementById('fw-away-row').innerHTML = teamRow('away', s.away_team);
+      document.getElementById('fw-home-row').innerHTML = teamRow('home', s.home_team);
+
+      // BSO dots
+      const dots = (id, val, max, cls) => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = Array.from({length: max}, (_, i) =>
+          `<div class="fw-dot${i < val ? ' ' + cls : ''}"></div>`
+        ).join('');
+      };
+      dots('fw-balls',   s.balls,   4, 'ball-on');
+      dots('fw-strikes', s.strikes, 3, 'strike-on');
+      dots('fw-outs',    s.outs,    3, 'out-on');
+
+      // Inning badge
+      const ord = ['','1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th'];
+      const inn = ord[cur] || `${cur}th`;
+      const half = s.half === 'top' ? '▲' : '▼';
+      setText('fw-inning-badge', s.status === 'final' ? 'FINAL' : `${half} ${inn}`);
     }
 
     // ── Box score ─────────────────────────────────────────
