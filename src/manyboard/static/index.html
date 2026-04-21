@@ -512,22 +512,29 @@
               <th class="team-h"></th>
               ${Array.from({length: numCols}, (_, i) => `<th>${i+1}</th>`).join('')}
               <th style="border-left:1px solid var(--border-mid)">R</th>
+              <th style="border-left:1px solid var(--border-mid)">H</th>
+              <th style="border-left:1px solid var(--border-mid)">E</th>
             </tr></thead>
             <tbody>
               <tr>
                 <td class="team-h">${esc(g.away_team)}</td>
                 ${Array.from({length: numCols}, (_, i) => bbCell('away', i)).join('')}
                 <td class="total-h">${g.away_total}</td>
+                <td class="total-h">${g.away_hits}</td>
+                <td class="total-h">${g.away_errors}</td>
               </tr>
               <tr>
                 <td class="team-h">${esc(g.home_team)}</td>
                 ${Array.from({length: numCols}, (_, i) => bbCell('home', i)).join('')}
                 <td class="total-h">${g.home_total}</td>
+                <td class="total-h">${g.home_hits}</td>
+                <td class="total-h">${g.home_errors}</td>
               </tr>
             </tbody>
           </table>
           <div class="card-actions">
-            <a href="/baseball.html?game=${g.id}&view=boxscore" class="btn">Box Score</a>
+            <a href="/baseball.html?game=${g.id}&view=scoreboard" class="btn">Scoreboard</a>
+            <a href="/baseball.html?game=${g.id}&view=modern" class="btn">Modern</a>
             <a href="/baseball.html?game=${g.id}&view=ump" class="btn">Ump</a>
             <a href="/baseball.html?game=${g.id}&view=control" class="btn">Control</a>
             <button class="btn btn-danger" onclick="deleteGame('baseball','${g.id}')">Delete</button>

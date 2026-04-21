@@ -587,7 +587,7 @@
     <span class="header-score" id="header-score"></span>
     <nav class="view-tabs">
       <button class="tab-btn" id="tab-scoreboard" onclick="switchView('scoreboard')">Scoreboard</button>
-      <button class="tab-btn" id="tab-boxscore"   onclick="switchView('boxscore')">Box Score</button>
+      <button class="tab-btn" id="tab-modern"     onclick="switchView('modern')">Modern</button>
       <button class="tab-btn" id="tab-ump"         onclick="switchView('ump')">Ump</button>
       <button class="tab-btn" id="tab-control"     onclick="switchView('control')">Control</button>
     </nav>
@@ -641,8 +641,8 @@
     </div>
   </div>
 
-  <!-- ── BOX SCORE VIEW ────────────────────────────────── -->
-  <div class="view" id="view-boxscore">
+  <!-- ── MODERN VIEW ──────────────────────────────────── -->
+  <div class="view" id="view-modern">
 
     <div class="bs-table-wrap">
       <table class="bs-table">
@@ -651,6 +651,8 @@
             <th></th>
             <!-- inning headers injected by JS -->
             <th class="bs-divider">R</th>
+            <th class="bs-divider">H</th>
+            <th class="bs-divider">E</th>
           </tr>
         </thead>
         <tbody>
@@ -658,11 +660,15 @@
             <td class="bs-team-name" id="bs-away-name"></td>
             <!-- scores injected -->
             <td class="bs-total" id="bs-away-total"></td>
+            <td class="bs-total" id="bs-away-hits-val"></td>
+            <td class="bs-total" id="bs-away-errors-val"></td>
           </tr>
           <tr id="bs-home-row">
             <td class="bs-team-name" id="bs-home-name"></td>
             <!-- scores injected -->
             <td class="bs-total" id="bs-home-total"></td>
+            <td class="bs-total" id="bs-home-hits-val"></td>
+            <td class="bs-total" id="bs-home-errors-val"></td>
           </tr>
         </tbody>
       </table>
@@ -936,7 +942,7 @@
     // ── State ────────────────────────────────────────────
     const params = new URLSearchParams(window.location.search);
     const gameId = params.get('game');
-    let view  = params.get('view') || 'boxscore';
+    let view  = params.get('view') || 'scoreboard';
     let state = null;
 
     // ── Theme ────────────────────────────────────────────
@@ -994,10 +1000,10 @@
     function render() {
       if (!state) return;
       renderHeader();
-      if (view === 'scoreboard')   renderFenway();
-      else if (view === 'boxscore') renderBoxscore();
-      else if (view === 'ump')      renderUmp();
-      else if (view === 'control')  renderControl();
+      if (view === 'scoreboard')  renderFenway();
+      else if (view === 'modern') renderModern();
+      else if (view === 'ump')    renderUmp();
+      else if (view === 'control') renderControl();
     }
 
     function renderHeader() {
@@ -1056,22 +1062,26 @@
       setText('fw-inning-badge', s.status === 'final' ? 'FINAL' : `${half} ${inn}`);
     }
 
-    // ── Box score ─────────────────────────────────────────
-    function renderBoxscore() {
+    // ── Modern (box score) ────────────────────────────────
+    function renderModern() {
       const s = state;
       setText('bs-away-name', s.away_team);
       setText('bs-home-name', s.home_team);
-      setText('bs-away-total', s.away_total);
-      setText('bs-home-total', s.home_total);
+      setText('bs-away-total',      s.away_total);
+      setText('bs-home-total',      s.home_total);
+      setText('bs-away-hits-val',   s.away_hits);
+      setText('bs-home-hits-val',   s.home_hits);
+      setText('bs-away-errors-val', s.away_errors);
+      setText('bs-home-errors-val', s.home_errors);
 
       // Rebuild inning columns
       const headerRow = document.getElementById('bs-header-row');
       const awayRow   = document.getElementById('bs-away-row');
       const homeRow   = document.getElementById('bs-home-row');
 
-      // Clear old inning cells (keep first and last)
+      // Keep first (team name/header) and last 3 (R, H, E)
       const clearRow = row => {
-        while (row.children.length > 2) row.removeChild(row.children[1]);
+        while (row.children.length > 4) row.removeChild(row.children[1]);
       };
       clearRow(headerRow);
       clearRow(awayRow);
@@ -1082,7 +1092,7 @@
         const th = document.createElement('th');
         th.textContent = i + 1;
         if (isCurrent) th.style.color = '#4fc3f7';
-        headerRow.insertBefore(th, headerRow.lastElementChild);
+        headerRow.insertBefore(th, headerRow.children[headerRow.children.length - 3]);
 
         const awayScore = s.scores.away[i];
         const homeScore = s.scores.home[i];
@@ -1092,8 +1102,8 @@
         homeTd.className = 'bs-inning-score' + (isCurrent ? ' current' : homeScore === null ? ' empty' : '');
         awayTd.textContent = awayScore === null ? (isCurrent ? '' : '·') : awayScore;
         homeTd.textContent = homeScore === null ? (isCurrent ? '' : '·') : homeScore;
-        awayRow.insertBefore(awayTd, awayRow.lastElementChild);
-        homeRow.insertBefore(homeTd, homeRow.lastElementChild);
+        awayRow.insertBefore(awayTd, awayRow.children[awayRow.children.length - 3]);
+        homeRow.insertBefore(homeTd, homeRow.children[homeRow.children.length - 3]);
       }
 
       // Inning / half label
