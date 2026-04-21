@@ -820,8 +820,8 @@
     <div class="ctrl-section">
       <div class="ctrl-header">Other Stats</div>
       <div class="ctrl-row">
-        <button class="btn" onclick="recordBattingStat('strikeouts', 1)">+K</button>
-        <button class="btn" onclick="recordBattingStat('strikeouts', -1)">−K</button>
+        <button class="btn" onclick="recordFieldingStat('strikeouts', 1)">+K</button>
+        <button class="btn" onclick="recordFieldingStat('strikeouts', -1)">−K</button>
         <button class="btn" onclick="recordBattingStat('lob', 1)">+LOB</button>
         <button class="btn" onclick="recordBattingStat('lob', -1)">−LOB</button>
         <button class="btn btn-err" onclick="recordFieldingError()">+Error</button>
@@ -1342,6 +1342,11 @@
     async function recordBattingStat(stat, delta) {
       if (!state) return;
       await api('stat', { team: _battingTeam(), stat, delta });
+    }
+
+    async function recordFieldingStat(stat, delta = 1) {
+      if (!state) return;
+      await api('stat', { team: _fieldingTeam(), stat, delta });
     }
 
     async function recordFieldingError(delta = 1) {
