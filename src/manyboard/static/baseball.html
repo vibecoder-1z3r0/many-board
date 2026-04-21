@@ -566,34 +566,17 @@
   <!-- ── UMP VIEW (field actions) ─────────────────────── -->
   <div class="view" id="view-ump">
 
-    <!-- Live BSO count -->
+    <!-- Count + pitch buttons -->
     <div class="ctrl-section">
       <div class="ctrl-header">Count</div>
       <div class="ump-bso" id="ump-bso-display"></div>
-    </div>
-
-    <!-- Main ump buttons -->
-    <div class="ctrl-section">
-      <div class="ctrl-header">Pitch / Play</div>
-      <div class="ctrl-row">
+      <div class="ctrl-row" style="margin-top:8px;">
         <button class="btn-big btn-ball"   onclick="api('ball')">Ball</button>
         <button class="btn-big btn-strike" onclick="api('strike')">Strike</button>
-        <button class="btn-big btn-foul"   onclick="api('foul')">Foul</button>
         <button class="btn-big btn-out"    onclick="api('out')">Out</button>
       </div>
       <div class="ctrl-row" style="margin-top:4px;">
         <button class="btn" onclick="api('count/reset')">Reset Count</button>
-        <button class="btn" onclick="api('change-sides')" style="border-color:var(--accent);color:var(--accent);">Change Sides</button>
-      </div>
-    </div>
-
-    <!-- Scoring -->
-    <div class="ctrl-section">
-      <div class="ctrl-header">Scoring</div>
-      <div class="ctrl-row" style="align-items:center; gap:12px;">
-        <button class="btn-big btn-run" id="ump-run-btn" onclick="api('run')">+1 Run</button>
-        <button class="btn"             onclick="api('run', {delta: -1})">−1 Run</button>
-        <span id="ump-score-display" style="font-family:'Orbitron',monospace; font-size:20px; color:var(--text-bright); margin-left:8px;"></span>
       </div>
     </div>
 
@@ -614,6 +597,22 @@
         </div>
         <button class="btn" onclick="clearBases()">Clear Bases</button>
       </div>
+    </div>
+
+    <!-- Scoring -->
+    <div class="ctrl-section">
+      <div class="ctrl-header">Scoring</div>
+      <div class="ctrl-row" style="align-items:center; gap:12px;">
+        <button class="btn-big btn-run" id="ump-run-btn" onclick="api('run')">+1 Run</button>
+        <button class="btn"             onclick="api('run', {delta: -1})">−1 Run</button>
+        <span id="ump-score-display" style="font-family:'Orbitron',monospace; font-size:20px; color:var(--text-bright); margin-left:8px;"></span>
+      </div>
+    </div>
+
+    <!-- Change Sides -->
+    <div class="ctrl-section">
+      <button class="btn-big" onclick="api('change-sides')"
+        style="width:100%; font-size:20px; border-color:var(--accent); color:var(--accent);">Change Sides</button>
     </div>
 
     <!-- Hits -->
