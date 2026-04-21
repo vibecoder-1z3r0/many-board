@@ -649,22 +649,6 @@
       </table>
     </div>
 
-    <div class="d-possession-row">
-      <span class="d-poss-arrow" id="bs-poss-arrow"></span>
-      <span id="bs-poss-label"></span>
-      &nbsp;·&nbsp;
-      <div class="d-to-row">
-        <div class="d-to-team">
-          <span id="bs-away-to-name" style="color:#888"></span>
-          <div class="d-timeouts" id="bs-away-timeouts"></div>
-        </div>
-        <div class="d-to-team">
-          <span id="bs-home-to-name" style="color:#888"></span>
-          <div class="d-timeouts" id="bs-home-timeouts"></div>
-        </div>
-      </div>
-    </div>
-
     <div class="d-clock-wrap">
       <div class="d-single-clock">
         <div class="d-clock-value" id="bs-game-clock"></div>
@@ -1098,13 +1082,6 @@
         </tr>`;
       }).join('');
 
-      setText('bs-poss-arrow', '');
-      const possTeam = state.possession === 'away' ? state.away_team : state.home_team;
-      setText('bs-poss-label', `${possTeam} ball`);
-      setText('bs-away-to-name', state.away_team);
-      setText('bs-home-to-name', state.home_team);
-      renderDots('bs-away-timeouts', state.away_timeouts, 'd-timeout-dot', 3);
-      renderDots('bs-home-timeouts', state.home_timeouts, 'd-timeout-dot', 3);
       renderClockElements();
       document.getElementById('bs-nrz').style.display = state.no_run_zone ? 'block' : 'none';
     }
