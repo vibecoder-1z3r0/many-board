@@ -446,9 +446,10 @@
 
     /* ════════════════════════════════════════════════════════
        FENWAY (MANUAL SCOREBOARD) VIEW
+       Uses app CSS vars by default; field theme gets green.
     ════════════════════════════════════════════════════════ */
-    #view-fenway {
-      background: #182818;
+    #view-scoreboard {
+      background: var(--bg);
       align-items: stretch;
       justify-content: flex-start;
       padding: 0;
@@ -473,13 +474,13 @@
       font-family: 'Arial Narrow', Arial, sans-serif;
     }
     .fw-table thead th {
-      background: #0e1e0e;
-      color: #8ab08a;
+      background: var(--panel);
+      color: var(--text-dim);
       font-size: clamp(10px, 2.2vw, 20px);
       font-weight: 700;
       text-align: center;
       padding: clamp(4px, 1vh, 10px) clamp(2px, 0.8vw, 8px);
-      border: 1px solid #2a4a2a;
+      border: 1px solid var(--border);
       letter-spacing: 1px;
       min-width: clamp(28px, 5vw, 56px);
     }
@@ -489,19 +490,19 @@
       min-width: clamp(70px, 11vw, 140px);
     }
     .fw-table thead th.fw-rhe-hdr {
-      color: #f5c518;
-      border-left: 3px solid #3a6a3a;
+      color: var(--accent);
+      border-left: 3px solid var(--border);
       min-width: clamp(34px, 5.5vw, 64px);
     }
-    .fw-table thead th.fw-cur-hdr { color: #4fc3f7; }
+    .fw-table thead th.fw-cur-hdr { color: var(--highlight); }
     .fw-table tbody td {
-      background: #0e1e0e;
-      color: #f0ead8;
+      background: var(--panel);
+      color: var(--text);
       font-size: clamp(28px, 7vw, 80px);
       font-weight: 900;
       text-align: center;
       padding: clamp(8px, 2vh, 22px) clamp(2px, 0.8vw, 8px);
-      border: 1px solid #2a4a2a;
+      border: 1px solid var(--border);
       font-family: 'Arial Black', 'Impact', Arial, sans-serif;
       line-height: 1;
     }
@@ -510,21 +511,21 @@
       padding-left: clamp(10px, 2vw, 20px);
       font-size: clamp(15px, 3.5vw, 40px);
       letter-spacing: 2px;
-      background: #0a140a;
-      color: #f0ead8;
+      background: var(--bg);
+      color: var(--text);
     }
-    .fw-table tbody td.fw-cur { background: #1a3a1a; color: #ffffff; }
-    .fw-table tbody td.fw-empty { color: #2a4a2a; font-size: clamp(16px, 3.5vw, 40px); }
-    .fw-table tbody td.fw-dash { color: #6a9a6a; }
+    .fw-table tbody td.fw-cur { background: var(--border); color: var(--text-bright); }
+    .fw-table tbody td.fw-empty { color: var(--text-dimmer); font-size: clamp(16px, 3.5vw, 40px); }
+    .fw-table tbody td.fw-dash { color: var(--text-dim); }
     .fw-table tbody td.fw-rhe-val {
-      color: #f5c518;
-      background: #0a140a;
-      border-left: 3px solid #3a6a3a;
+      color: var(--accent);
+      background: var(--bg);
+      border-left: 3px solid var(--border);
     }
     /* BSO footer */
     .fw-bso-bar {
-      background: #0a140a;
-      border-top: 3px solid #3a6a3a;
+      background: var(--panel);
+      border-top: 2px solid var(--border);
       display: flex;
       align-items: center;
       gap: clamp(20px, 5vw, 64px);
@@ -539,7 +540,7 @@
     }
     .fw-bso-label {
       font-size: clamp(8px, 1.6vw, 14px);
-      color: #6a9a6a;
+      color: var(--text-dim);
       font-weight: 700;
       letter-spacing: 2px;
       text-transform: uppercase;
@@ -549,8 +550,8 @@
       width: clamp(11px, 2.4vw, 24px);
       height: clamp(11px, 2.4vw, 24px);
       border-radius: 50%;
-      background: #182818;
-      border: 1px solid #3a6a3a;
+      background: var(--bg);
+      border: 1px solid var(--border);
     }
     .fw-dot.ball-on   { background: #3498db; border-color: #3498db; box-shadow: 0 0 6px rgba(52,152,219,0.7); }
     .fw-dot.strike-on { background: #f39c12; border-color: #f39c12; box-shadow: 0 0 6px rgba(243,156,18,0.7); }
@@ -559,9 +560,24 @@
       margin-left: auto;
       font-size: clamp(13px, 2.8vw, 24px);
       font-weight: 700;
-      color: #4fc3f7;
+      color: var(--highlight);
       letter-spacing: 1px;
     }
+    /* Field theme: Fenway Green Monster */
+    [data-theme="field"] #view-scoreboard { background: #182818; }
+    [data-theme="field"] .fw-table thead th { background: #0e1e0e; color: #8ab08a; border-color: #2a4a2a; }
+    [data-theme="field"] .fw-table thead th.fw-rhe-hdr { color: #f5c518; border-left-color: #3a6a3a; }
+    [data-theme="field"] .fw-table thead th.fw-cur-hdr { color: #4fc3f7; }
+    [data-theme="field"] .fw-table tbody td { background: #0e1e0e; color: #f0ead8; border-color: #2a4a2a; }
+    [data-theme="field"] .fw-table tbody td.fw-team-name { background: #0a140a; color: #f0ead8; }
+    [data-theme="field"] .fw-table tbody td.fw-cur { background: #1a3a1a; color: #ffffff; }
+    [data-theme="field"] .fw-table tbody td.fw-empty { color: #2a4a2a; }
+    [data-theme="field"] .fw-table tbody td.fw-dash { color: #6a9a6a; }
+    [data-theme="field"] .fw-table tbody td.fw-rhe-val { color: #f5c518; background: #0a140a; border-left-color: #3a6a3a; }
+    [data-theme="field"] .fw-bso-bar { background: #0a140a; border-top-color: #3a6a3a; }
+    [data-theme="field"] .fw-bso-label { color: #6a9a6a; }
+    [data-theme="field"] .fw-dot { background: #182818; border-color: #3a6a3a; }
+    [data-theme="field"] .fw-inning-badge { color: #4fc3f7; }
   </style>
 </head>
 <body>
